@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import environ
+import os
 
 # Initialize environment variables
 env = environ.Env()
@@ -63,7 +64,9 @@ ROOT_URLCONF = 'transcendance.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            BASE_DIR / 'frontend' / 'templates' / 'html',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -77,6 +80,14 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'transcendance.wsgi.application'
+
+# settings.py
+
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    BASE_DIR / 'frontend' / 'static',
+]
+
 
 
 # Database
