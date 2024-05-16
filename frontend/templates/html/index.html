@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dropdown Example</title>
+    <title>test</title>
     <!-- Link to Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -22,14 +22,17 @@
                     <li class="nav-item"><a href="#" class="nav-link">More</a></li>
                 </ul>
                 <ul class="nav navbar-nav flex-row justify-content-between ml-auto">
-                    <li class="nav-item order-2 order-md-1"><a href="#" class="nav-link" title="settings"><i class="fa fa-cog fa-fw fa-lg"></i></a></li>
-                    <li class="dropdown order-1">
-                        <button type="button" id="dropdownMenu1" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Login <span class="caret"></span></button>
+                    <li class="nav-item" id="welcomeSection" style="display: none;">
+                        <span class="navbar-text text-white">Welcome, <span id="usernameDisplay"></span>!</span>
+                    </li>
+                    <button type="button" id="logoutButton" style="display: none;" onclick="Logout()">Log out</button>
+                    <li class="dropdown order-1" id="loginButton">
+                        <button type="button" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Login <span class="caret"></span></button>
                         <ul class="dropdown-menu dropdown-menu-right mt-1">
                             <li class="p-3">
-                                <form class="form" role="form">
+                                <form class="form" role="form" onsubmit="event.preventDefault(); postLogin();">
                                     <div class="form-group">
-                                        <input id="emailInput" placeholder="Email" class="form-control form-control-sm" type="text" required="">
+                                        <input id="usernameInput" placeholder="Email" class="form-control form-control-sm" type="text" required="">
                                     </div>
                                     <div class="form-group">
                                         <input id="passwordInput" placeholder="Password" class="form-control form-control-sm" type="text" required="">
@@ -44,8 +47,8 @@
                             </li>
                         </ul>
                     </li>
-                    <li class="dropdown order-1">
-                        <button type="button" id="dropdownMenu2" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Register <span class="caret"></span></button>
+                    <li class="dropdown order-1" id="registerButton">
+                        <button type="button" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Register <span class="caret"></span></button>
                         <ul class="dropdown-menu dropdown-menu-right mt-1 register">
                             <li class="p-3">
                                 <form class="form" role="form">
@@ -69,7 +72,7 @@
             </div>
         </div>
     </nav>
-
+    <script src="../../static/js/script.js"></script>
     <!-- Link to jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <!-- Link to Popper.js -->
