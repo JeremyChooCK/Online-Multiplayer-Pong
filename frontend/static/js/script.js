@@ -69,6 +69,33 @@ async function postLogin() {
     }
 }
 
+async function postRegister() {
+    const username = document.getElementById("newUsenameInput").value;
+    const password = document.getElementById("newPasswordInput").value;
+    const url = "http://127.0.0.1:8000/auth/register/";
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Invalid credentials'); // Adjusted for consistency with your error handling
+        }
+
+        const data = await response.json();
+        console.log('Response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Fetch error:', error);
+    }
+
+}
+
 async function Logout() {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");

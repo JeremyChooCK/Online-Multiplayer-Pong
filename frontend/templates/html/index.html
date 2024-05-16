@@ -52,7 +52,7 @@
                         <button type="button" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Register <span class="caret"></span></button>
                         <ul class="dropdown-menu dropdown-menu-right mt-1 register">
                             <li class="p-3">
-                                <form class="form" role="form">
+                                <form class="form" role="form" onsubmit="event.preventDefault(); postRegister();">
                                     <div class="form-group">
                                         <input id="newUsenameInput" placeholder="Username" class="form-control form-control-sm" type="text" required="">
                                     </div>
