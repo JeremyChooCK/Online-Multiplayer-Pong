@@ -6,6 +6,7 @@
     <title>test</title>
     <!-- Link to Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" role="navigation">
@@ -23,16 +24,16 @@
                 </ul>
                 <ul class="nav navbar-nav flex-row justify-content-between ml-auto">
                     <li class="nav-item" id="welcomeSection" style="display: none;">
-                        <span class="navbar-text text-white">Welcome, <span id="usernameDisplay"></span>!</span>
+                        <span class="navbar-text text-white">Welcome, <span id="usernameDisplay"></span>!<i class="fa-solid fa-user"></i></span>
                     </li>
-                    <button type="button" id="logoutButton" style="display: none;" onclick="Logout()">Log out</button>
+                    <button type="button" id="logoutButton" style="display: none;" onclick="Logout()" class="btn btn-outline-secondary">Log out</button>
                     <li class="dropdown order-1" id="loginButton">
                         <button type="button" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Login <span class="caret"></span></button>
                         <ul class="dropdown-menu dropdown-menu-right mt-1">
                             <li class="p-3">
                                 <form class="form" role="form" onsubmit="event.preventDefault(); postLogin();">
                                     <div class="form-group">
-                                        <input id="usernameInput" placeholder="Email" class="form-control form-control-sm" type="text" required="">
+                                        <input id="usernameInput" placeholder="Username" class="form-control form-control-sm" type="text" required="">
                                     </div>
                                     <div class="form-group">
                                         <input id="passwordInput" placeholder="Password" class="form-control form-control-sm" type="text" required="">
@@ -53,7 +54,7 @@
                             <li class="p-3">
                                 <form class="form" role="form">
                                     <div class="form-group">
-                                        <input id="newEmailInput" placeholder="Email" class="form-control form-control-sm" type="text" required="">
+                                        <input id="newUsenameInput" placeholder="Username" class="form-control form-control-sm" type="text" required="">
                                     </div>
                                     <div class="form-group">
                                         <input id="newPasswordInput" placeholder="Password" class="form-control form-control-sm" type="text" required="">

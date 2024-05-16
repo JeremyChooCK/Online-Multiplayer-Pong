@@ -80,10 +80,23 @@ async function Logout() {
 }
 
 async function verifyTokenAndExecute(callback) {
-    const accessToken = localStorage.getItem("accessToken");
+    let accessToken = localStorage.getItem("accessToken");
     if (!accessToken) {
         alert("You are not logged in.");
         return;
+    }
+
+    // Decode the token without verifying to check expiry
+    const decoded = jwt_decode(accessToken);
+    const now = Date.now() / 1000; // Current time in seconds since epoch
+
+    // If token is about to expire in less than 30 seconds, refresh it
+    if (decoded.exp && decoded.exp - now < 30) {
+        accessToken = await refreshAccessToken(); // Refresh the token
+        if (!accessToken) {
+            alert("Session expired. Please log in again.");
+            return; // Exit if no new token is obtained
+        }
     }
 
     const url = "http://127.0.0.1:8000/auth/token/verify/"; // Adjust this to your actual token verification endpoint
@@ -99,17 +112,43 @@ async function verifyTokenAndExecute(callback) {
         });
 
         if (response.ok) {
-            const data = await response.json();
-            if (data.code !== 'token_not_valid') {
-                callback();
-            } else {
-                alert("Session expired. Please log in again.");
-            }
+            callback(); // Proceed with the callback if the token is valid
         } else {
             throw new Error('Failed to verify token');
         }
     } catch (error) {
         console.error('Error verifying token:', error);
         alert("An error occurred. Please try again.");
+    }
+}
+
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem("refreshToken");
+    if (!refreshToken) {
+        console.error("No refresh token available.");
+        return;
+    }
+
+    const url = "http://127.0.0.1:8000/auth/token/refresh/";  // Your API endpoint for refreshing tokens
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh: refreshToken })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem("accessToken", data.access);  // Update the access token
+            console.log("Access token refreshed.");
+            return data.access;
+        } else {
+            throw new Error('Failed to refresh access token');
+        }
+    } catch (error) {
+        console.error('Error refreshing access token:', error);
+        alert("Session expired. Please log in again.");
+        // Optionally redirect to login or clear session
     }
 }
