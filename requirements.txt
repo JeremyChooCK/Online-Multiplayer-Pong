@@ -4,3 +4,5 @@ django-environ
 djangorestframework
 djangorestframework-simplejwt
 django-cors-headers
+social-auth-core
+social-auth-app-django
