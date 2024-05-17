@@ -70,11 +70,18 @@ async function postLogin() {
 }
 
 async function postRegister() {
-    const username = document.getElementById("newUsenameInput").value;
+    const username = document.getElementById("newUsernameInput").value;
     const password = document.getElementById("newPasswordInput").value;
+    const confirmPassword = document.getElementById("confirmPasswordInput").value;
+    console.log('Registering:', username, password, confirmPassword);
+    // if (password !== confirmPassword) {
+    //     alert("Passwords do not match.");
+    //     return;
+    // }
     const url = "http://127.0.0.1:8000/auth/register/";
-
+    
     try {
+        console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -84,6 +91,7 @@ async function postRegister() {
         });
 
         if (!response.ok) {
+            console.log(response);
             throw new Error('Invalid credentials'); // Adjusted for consistency with your error handling
         }
 
