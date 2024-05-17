@@ -69,11 +69,47 @@ async function postLogin() {
     }
 }
 
+async function loginAfterRegister(username, password) {
+    const url = "http://127.0.0.1:8000/auth/token/";
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, password }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Unauthorized'); // Adjusted for consistency with your error handling
+        }
+
+        const data = await response.json();
+        console.log('Response data:', data);
+        localStorage.setItem("accessToken", data.access);
+        localStorage.setItem("refreshToken", data.refresh);
+
+        // Update UI after login
+        document.getElementById("usernameDisplay").textContent = username;
+        document.getElementById("welcomeSection").style.display = '';
+        document.getElementById("logoutButton").style.display = '';
+        document.getElementById("loginButton").style.display = 'none';
+        document.getElementById("registerButton").style.display = 'none';
+
+        return data;
+    } catch (error) {
+        console.error('Fetch error:', error);
+        if (error.message === "Unauthorized") {
+            alert("Invalid credentials");
+        }
+    }
+}
+
 async function postRegister() {
     const username = document.getElementById("newUsernameInput").value;
     const password = document.getElementById("newPasswordInput").value;
     const confirmPassword = document.getElementById("confirmPasswordInput").value;
-    console.log('Registering:', username, password, confirmPassword);
     // if (password !== confirmPassword) {
     //     alert("Passwords do not match.");
     //     return;
@@ -81,7 +117,6 @@ async function postRegister() {
     const url = "http://127.0.0.1:8000/auth/register/";
     
     try {
-        console.log('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
         const response = await fetch(url, {
             method: "POST",
             headers: {
@@ -92,14 +127,18 @@ async function postRegister() {
 
         if (!response.ok) {
             console.log(response);
-            throw new Error('Invalid credentials'); // Adjusted for consistency with your error handling
+            throw new Error('Username already exists'); // Adjusted for consistency with your error handling
         }
 
         const data = await response.json();
-        console.log('Response data:', data);
+        console.log('successfully registered');
+        loginAfterRegister(username, password);
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
+        if (error.message === "Username already exists") {
+            alert("Username already exists");
+        }
     }
 
 }
