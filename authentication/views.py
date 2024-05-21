@@ -56,44 +56,61 @@ def get_user_info(access_token):
     return response.json()
 
 def oauth_callback(request):
+    # Get the 'code' parameter from the request's GET parameters, which is sent by the OAuth provider.
     code = request.GET.get('code')
     if code:
+        # Exchange the authorization code for an access token using a helper function.
         access_token_response = exchange_code_for_token(code)
+        
+        # Check if the response contains an 'access_token'.
         if 'access_token' in access_token_response:
+            # Extract the access token from the response.
             access_token = access_token_response['access_token']
-            user_info = get_user_info(access_token)  # Get user information using the token
+            
+            # Use the access token to retrieve user information from the OAuth provider.
+            user_info = get_user_info(access_token)
 
+            # Get the user model from Django's authentication framework.
             User = get_user_model()
-            # Assuming 'login' and 'email' are correct fields returned by your OAuth provider
+            
+            # Create or get a user in your database. Assume the user info includes 'login' and 'email'.
             user, created = User.objects.get_or_create(
                 username=user_info['login'], 
                 defaults={
-                    'email': user_info.get('email', ''),
-                    'first_name': user_info.get('first_name', '')  # Make sure your User model has a 'first_name' field
+                    'email': user_info.get('email', ''),  # Default email to empty string if not provided.
+                    'first_name': user_info.get('first_name', '')  # Default first_name to empty string if not provided.
                 }
             )
+            
+            # If the user was created, set an unusable password (since authentication is handled via OAuth).
             if created:
                 user.set_unusable_password()
                 user.save()
 
-            # Create a custom token that includes the first_name
+            # Generate a refresh token for the user. This token can be used to get new access tokens.
             refresh = RefreshToken.for_user(user)
-            refresh['username'] = user_info.get('first_name', '')  # Include first_name in the token
+            
+            # Customize the token to include the first_name from the OAuth provider's data.
+            refresh['username'] = user_info.get('first_name', '')  # Incorrectly labeled as username, should be a custom claim like 'first_name'.
 
+            # Prepare the token data for response.
             jwt_tokens = {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
 
-            # Redirect to a specific page with tokens in the query parameters (not recommended for production)
+            # Redirect to a page that handles these tokens. Passing tokens via URL is not secure for production!
             redirect_url = reverse('oauth_token') + f"?access={jwt_tokens['access']}&refresh={jwt_tokens['refresh']}"
             return HttpResponseRedirect(redirect_url)
         else:
+            # Handle cases where the access token is not retrieved.
             error_details = access_token_response.get('details', {})
             return HttpResponse(f"Failed to retrieve access token. Details: {json.dumps(error_details)}")
     else:
+        # Handle cases where no code is provided in the request.
         error = request.GET.get('error', 'Unknown error')
         return HttpResponse(f"Failed to authorize: {error}")
+
 
 
 def exchange_code_for_token(code):
