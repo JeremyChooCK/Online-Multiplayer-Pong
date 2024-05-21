@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', checkAuthOnLoad, handleOAuthCallback);
+document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
 
 function checkAuthOnLoad() {
     const accessToken = localStorage.getItem("accessToken");
@@ -233,32 +233,3 @@ function redirectToOAuthProvider() {
 
     window.location.href = authUrl; // This will redirect the user to the OAuth provider
 }
-
-document.addEventListener('DOMContentLoaded', function() {
-    handleOAuthCallback();
-});
-
-async function handleOAuthCallback() {
-    console.log('Handling OAuth callback...');
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    if (!code) {
-        console.error("No code provided in OAuth callback.");
-        return;
-    }
-
-    try {
-        const response = await fetch(`http://127.0.0.1:8000/auth/oauth/?code=${code}`);
-        if (!response.ok) {
-            throw new Error('Failed to exchange code for tokens');
-        }
-        const data = await response.json();
-        localStorage.setItem("accessToken", data.access);
-        localStorage.setItem("refreshToken", data.refresh);
-
-        window.location.href = "/home"; // Redirect to home or another page
-    } catch (error) {
-        console.error('OAuth callback handling error:', error);
-    }
-}
-
