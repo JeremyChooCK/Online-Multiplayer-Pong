@@ -16,6 +16,9 @@ import json
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.http import JsonResponse
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.http import HttpResponseRedirect
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -60,28 +63,38 @@ def oauth_callback(request):
             access_token = access_token_response['access_token']
             user_info = get_user_info(access_token)  # Get user information using the token
 
-            # Handle or create the user in your Django application
             User = get_user_model()
-            user, created = User.objects.get_or_create(username=user_info['login'], defaults={'email': user_info.get('email', '')})
+            # Assuming 'login' and 'email' are correct fields returned by your OAuth provider
+            user, created = User.objects.get_or_create(
+                username=user_info['login'], 
+                defaults={
+                    'email': user_info.get('email', ''),
+                    'first_name': user_info.get('first_name', '')  # Make sure your User model has a 'first_name' field
+                }
+            )
             if created:
-                user.set_unusable_password()  # Users logging in via OAuth won't use Django's password management
+                user.set_unusable_password()
                 user.save()
 
-            # Create JWT tokens for the user
+            # Create a custom token that includes the first_name
             refresh = RefreshToken.for_user(user)
+            refresh['username'] = user_info.get('first_name', '')  # Include first_name in the token
+
             jwt_tokens = {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
 
-            return JsonResponse(jwt_tokens)
+            # Redirect to a specific page with tokens in the query parameters (not recommended for production)
+            redirect_url = reverse('oauth_token') + f"?access={jwt_tokens['access']}&refresh={jwt_tokens['refresh']}"
+            return HttpResponseRedirect(redirect_url)
         else:
-            # Handle the error case
             error_details = access_token_response.get('details', {})
             return HttpResponse(f"Failed to retrieve access token. Details: {json.dumps(error_details)}")
     else:
         error = request.GET.get('error', 'Unknown error')
         return HttpResponse(f"Failed to authorize: {error}")
+
 
 def exchange_code_for_token(code):
     token_url = 'https://api.intra.42.fr/oauth/token'

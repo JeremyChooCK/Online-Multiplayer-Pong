@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
 
 function checkAuthOnLoad() {
     const accessToken = localStorage.getItem("accessToken");
+    console.log('Access token:', accessToken);
     if (accessToken) {
         try {
             const decoded = jwt_decode(accessToken);

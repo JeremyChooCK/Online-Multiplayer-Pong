@@ -10,5 +10,5 @@ urlpatterns = [
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('register/', UserCreate.as_view(), name='register'),
-	path('oauth', oauth_callback, name='oauth_callback'),
+	path('oauth/', oauth_callback, name='oauth_callback'),
 ]
