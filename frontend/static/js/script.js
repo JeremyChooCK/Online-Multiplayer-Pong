@@ -105,6 +105,10 @@ async function loginAfterRegister(username, password) {
         document.getElementById("logoutButton").style.display = '';
         document.getElementById("loginButton").style.display = 'none';
         document.getElementById("registerButton").style.display = 'none';
+        if(data.profile_picture)
+            document.getElementById("profile_pic").src = data.profile_picture;
+        else
+            document.getElementById("profile_pic").src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
 
         return data;
     } catch (error) {
