@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
 
 function checkAuthOnLoad() {
     const accessToken = localStorage.getItem("accessToken");
-    console.log('Access token:', accessToken);
+    console.log("Access Token exists");
     if (accessToken) {
         try {
             const decoded = jwt_decode(accessToken);
@@ -12,6 +12,11 @@ function checkAuthOnLoad() {
                 document.getElementById("logoutButton").style.display = '';
                 document.getElementById("loginButton").style.display = 'none';
                 document.getElementById("registerButton").style.display = 'none';
+                console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",decoded.profile_pic.link);
+                if (decoded.profile_pic)
+                    document.getElementById("profile_pic").src = decoded.profile_pic.link;
+                else
+                    document.getElementById("profile_pic").src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
             } else {
                 handleLoggedOutState();
             }
@@ -29,6 +34,7 @@ function handleLoggedOutState() {
     document.getElementById("logoutButton").style.display = 'none';
     document.getElementById("loginButton").style.display = '';
     document.getElementById("registerButton").style.display = '';
+    document.getElementById("profile_pic").display = 'none';
 }
 
 async function postLogin() {
@@ -50,7 +56,6 @@ async function postLogin() {
         }
 
         const data = await response.json();
-        console.log('Response data:', data);
         localStorage.setItem("accessToken", data.access);
         localStorage.setItem("refreshToken", data.refresh);
 
@@ -60,6 +65,9 @@ async function postLogin() {
         document.getElementById("logoutButton").style.display = '';
         document.getElementById("loginButton").style.display = 'none';
         document.getElementById("registerButton").style.display = 'none';
+        console.log("AAAAAAAAAAAAAAAAAAAAAAAAA",data);
+        document.getElementById("profile_pic").src = data.profile_picture;
+        console.log(data.profile_picture);
 
         return data;
     } catch (error) {
@@ -87,7 +95,6 @@ async function loginAfterRegister(username, password) {
         }
 
         const data = await response.json();
-        console.log('Response data:', data);
         localStorage.setItem("accessToken", data.access);
         localStorage.setItem("refreshToken", data.refresh);
 
@@ -152,6 +159,8 @@ async function Logout() {
     document.getElementById("loginButton").style.display = '';
     document.getElementById("registerButton").style.display = '';
     document.getElementById("logoutButton").style.display = 'none';
+    document.getElementById("profile_pic").display = 'none';
+    document.getElementById("profile_pic").src = "";
 }
 
 async function verifyTokenAndExecute(callback) {

@@ -69,7 +69,6 @@ def oauth_callback(request):
             
             # Use the access token to retrieve user information from the OAuth provider.
             user_info = get_user_info(access_token)
-
             # Get the user model from Django's authentication framework.
             User = get_user_model()
             
@@ -91,7 +90,8 @@ def oauth_callback(request):
             refresh = RefreshToken.for_user(user)
             
             # Customize the token to include the first_name from the OAuth provider's data.
-            refresh['username'] = user_info.get('first_name', '')  # Incorrectly labeled as username, should be a custom claim like 'first_name'.
+            refresh['username'] = user_info.get('first_name', '')
+            refresh['profile_pic'] = user_info.get('image', '')  # Custom claim for the profile picture URL.
 
             # Prepare the token data for response.
             jwt_tokens = {
