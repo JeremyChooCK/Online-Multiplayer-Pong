@@ -12,7 +12,6 @@ function checkAuthOnLoad() {
                 document.getElementById("logoutButton").style.display = '';
                 document.getElementById("loginButton").style.display = 'none';
                 document.getElementById("registerButton").style.display = 'none';
-                console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",decoded.profile_pic.link);
                 if (decoded.profile_pic)
                     document.getElementById("profile_pic").src = decoded.profile_pic.link;
                 else
@@ -65,8 +64,10 @@ async function postLogin() {
         document.getElementById("logoutButton").style.display = '';
         document.getElementById("loginButton").style.display = 'none';
         document.getElementById("registerButton").style.display = 'none';
-        console.log("AAAAAAAAAAAAAAAAAAAAAAAAA",data);
-        document.getElementById("profile_pic").src = data.profile_picture;
+        if(data.profile_picture)
+            document.getElementById("profile_pic").src = data.profile_picture;
+        else
+            document.getElementById("profile_pic").src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
         console.log(data.profile_picture);
 
         return data;
