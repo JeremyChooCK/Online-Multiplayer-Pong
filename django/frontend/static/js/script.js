@@ -1,5 +1,7 @@
 document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
 
+let ip = "https://localhost/";
+
 function checkAuthOnLoad() {
     const accessToken = localStorage.getItem("accessToken");
     console.log("Access Token exists");
@@ -39,7 +41,7 @@ function handleLoggedOutState() {
 async function postLogin() {
     const username = document.getElementById("usernameInput").value;
     const password = document.getElementById("passwordInput").value;
-    const url = "http://localhost/auth/token/";
+    const url = ip + "auth/token/";
 
     try {
         const response = await fetch(url, {
@@ -80,7 +82,7 @@ async function postLogin() {
 }
 
 async function loginAfterRegister(username, password) {
-    const url = "http://localhost/auth/token/";
+    const url = ip + "auth/token/";
 
     try {
         const response = await fetch(url, {
@@ -127,7 +129,7 @@ async function postRegister() {
     //     alert("Passwords do not match.");
     //     return;
     // }
-    const url = "http://localhost/auth/register/";
+    const url = ip + "auth/register/";
     
     try {
         const response = await fetch(url, {
@@ -188,7 +190,7 @@ async function verifyTokenAndExecute(callback) {
         }
     }
 
-    const url = "http://localhost/auth/token/verify/"; // Adjust this to your actual token verification endpoint
+    const url = ip + "auth/token/verify/"; // Adjust this to your actual token verification endpoint
 
     try {
         const response = await fetch(url, {
@@ -218,7 +220,7 @@ async function refreshAccessToken() {
         return;
     }
 
-    const url = "http://localhost/auth/token/refresh/";  // Your API endpoint for refreshing tokens
+    const url = ip + "auth/token/refresh/";  // Your API endpoint for refreshing tokens
 
     try {
         const response = await fetch(url, {
