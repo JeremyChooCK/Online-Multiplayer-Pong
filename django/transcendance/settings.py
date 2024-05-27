@@ -108,6 +108,7 @@ SIMPLE_JWT = {
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -124,6 +125,10 @@ MIDDLEWARE = [
 #     "http://127.0.0.1:8000",
 # ]
 CORS_ALLOW_ALL_ORIGINS = True
+CSRF_TRUSTED_ORIGINS = [
+    'https://localhost',
+    'https://127.0.0.1',
+]
 
 ROOT_URLCONF = 'transcendance.urls'
 

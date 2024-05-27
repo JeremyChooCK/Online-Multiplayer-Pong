@@ -20,6 +20,8 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.http import HttpResponseRedirect
 from rest_framework import generics, permissions
+from .models import UserProfile
+from django.conf import settings
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -86,13 +88,34 @@ def oauth_callback(request):
             if created:
                 user.set_unusable_password()
                 user.save()
+                
+                # Create the UserProfile for the new user.
+                import urllib.request
+                
+                # Download the profile picture
+                profile_picture_url = user_info.get('image', {}).get('link', '')
+                if profile_picture_url:
+                    username = user.username
+                    file_name = f'{username}.png'
+                    file_path = os.path.join('profile_pictures', os.path.basename(profile_picture_url))  # Replace with the actual path where you want to save the image
+                    print( "FILE PATH: ",file_path)
+                    # Download the image and save it to the specified path
+                    urllib.request.urlretrieve(profile_picture_url, os.path.join(settings.MEDIA_ROOT, file_path))
+                    
+                    # Create the UserProfile for the new user with the file path
+                    UserProfile.objects.create(
+                        user=user,
+                        profile_picture=file_path,
+                        wins=0,
+                        losses=0,
+                        match_history=''
+                    )
 
             # Generate a refresh token for the user. This token can be used to get new access tokens.
             refresh = RefreshToken.for_user(user)
             
             # Customize the token to include the first_name from the OAuth provider's data.
             refresh['username'] = user_info.get('first_name', '')
-            refresh['profile_pic'] = user_info.get('image', '')  # Custom claim for the profile picture URL.
 
             # Prepare the token data for response.
             jwt_tokens = {
@@ -119,9 +142,9 @@ def exchange_code_for_token(code):
     data = {
         'grant_type': 'authorization_code',
         'code': code,
-        'redirect_uri': 'http://127.0.0.1:8000/auth/oauth',
+        'redirect_uri': 'https://localhost/auth/oauth',
         'client_id': 'u-s4t2ud-9b0fa67cf4ac001dac948db1c08b417156de148160cb998b92520a9e9bbaef2b',
-        'client_secret': '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',
+        'client_secret': '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',
     }
     response = requests.post(token_url, data=data)
     # Check if the request was successful
