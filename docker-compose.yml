@@ -11,19 +11,50 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "${POSTGRES_PORT}:${POSTGRES_PORT}"
+    networks:
+      - transcendance_network
 
   web:
-    build: .
+    build: ./django
     command: >
       sh -c "python manage.py wait_for_db &&
       python manage.py migrate &&
-      python manage.py runserver 0.0.0.0:8000"
+      python manage.py collectstatic --noinput &&
+      gunicorn transcendance.wsgi:application --bind 0.0.0.0:8000"
     volumes:
-      - .:/code
-    ports:
-      - "8000:8000"
+      - ./django:/code
+      - static_volume:/usr/share/nginx/static
+      - media_volume:/usr/share/nginx/media
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PORT=${POSTGRES_PORT}
     depends_on:
       - db
+    networks:
+      - transcendance_network
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - static_volume:/usr/share/nginx/static
+      - media_volume:/usr/share/nginx/media
+    depends_on:
+      - web
+    networks:
+      - transcendance_network
 
 volumes:
   postgres_data:
+  static_volume:
+  media_volume:
+
+networks:
+  transcendance_network:
+    driver: bridge
