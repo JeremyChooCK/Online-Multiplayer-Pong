@@ -7,3 +7,4 @@ django-cors-headers
 social-auth-core
 social-auth-app-django
 gunicorn
+Pillow

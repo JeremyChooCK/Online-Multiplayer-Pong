@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', checkAuthOnLoad);
 
 let ip = "https://localhost/";
 
-function checkAuthOnLoad() {
+async function checkAuthOnLoad() {
     const accessToken = localStorage.getItem("accessToken");
     console.log("Access Token exists");
     if (accessToken) {
@@ -14,10 +14,9 @@ function checkAuthOnLoad() {
                 document.getElementById("logoutButton").style.display = '';
                 document.getElementById("loginButton").style.display = 'none';
                 document.getElementById("registerButton").style.display = 'none';
-                if (decoded.profile_pic)
-                    document.getElementById("profile_pic").src = decoded.profile_pic.link;
-                else
-                    document.getElementById("profile_pic").src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
+                userData = await fetchUserData();
+                if(userData.profile.profile_picture)
+                    document.getElementById("profile_pic").src = userData.profile.profile_picture;
             } else {
                 handleLoggedOutState();
             }
@@ -27,6 +26,40 @@ function checkAuthOnLoad() {
         }
     } else {
         handleLoggedOutState();
+    }
+}
+
+async function fetchUserData() {
+    const ip = "https://localhost/";
+    const token = localStorage.getItem("accessToken");
+
+    try {
+        const response = await fetch(ip + "auth/user_details/", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token,
+            },
+        });
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                throw new Error('Unauthorized'); // Handle 401 Unauthorized error
+            } else {
+                throw new Error('Network response was not ok'); // Handle other response errors
+            }
+        }
+
+        const data = await response.json();
+        console.log("User Data: ", data);
+        return data;
+    } catch (error) {
+        console.error('Fetch error:', error);
+        if (error.message === "Unauthorized") {
+            alert("Invalid credentials");
+        } else {
+            alert("An error occurred while fetching the data");
+        }
     }
 }
 
@@ -66,11 +99,9 @@ async function postLogin() {
         document.getElementById("logoutButton").style.display = '';
         document.getElementById("loginButton").style.display = 'none';
         document.getElementById("registerButton").style.display = 'none';
-        if(data.profile_picture)
-            document.getElementById("profile_pic").src = data.profile_picture;
-        else
-            document.getElementById("profile_pic").src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
-        console.log(data.profile_picture);
+        userData = await fetchUserData();
+        if(userData.profile.profile_picture)
+            document.getElementById("profile_pic").src = userData.profile.profile_picture;
 
         return data;
     } catch (error) {
@@ -107,10 +138,9 @@ async function loginAfterRegister(username, password) {
         document.getElementById("logoutButton").style.display = '';
         document.getElementById("loginButton").style.display = 'none';
         document.getElementById("registerButton").style.display = 'none';
-        if(data.profile_picture)
-            document.getElementById("profile_pic").src = data.profile_picture;
-        else
-            document.getElementById("profile_pic").src = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png";
+        userData = await fetchUserData();
+        if(userData.profile.profile_picture)
+            document.getElementById("profile_pic").src = userData.profile.profile_picture;
 
         return data;
     } catch (error) {

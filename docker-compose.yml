@@ -24,7 +24,7 @@ services:
     volumes:
       - ./django:/code
       - static_volume:/usr/share/nginx/static
-      - media_volume:/usr/share/nginx/media
+      - ./django/frontend/media:/usr/share/nginx/media  # Correct path for media files
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -44,7 +44,7 @@ services:
       - "443:443"
     volumes:
       - static_volume:/usr/share/nginx/static
-      - media_volume:/usr/share/nginx/media
+      - ./django/frontend/media:/usr/share/nginx/media  # Correct path for media files
     depends_on:
       - web
     networks:
@@ -53,7 +53,6 @@ services:
 volumes:
   postgres_data:
   static_volume:
-  media_volume:
 
 networks:
   transcendance_network:

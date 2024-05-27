@@ -19,6 +19,7 @@ from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.http import HttpResponseRedirect
+from rest_framework import generics, permissions
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -129,3 +130,10 @@ def exchange_code_for_token(code):
     else:
         # Log or handle error response
         return {'error': 'Failed to retrieve token', 'details': response.json()}
+    
+class UserDetailView(generics.RetrieveAPIView):
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
