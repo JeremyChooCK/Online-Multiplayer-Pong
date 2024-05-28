@@ -8,15 +8,8 @@ async function checkAuthOnLoad() {
     if (accessToken) {
         try {
             const decoded = jwt_decode(accessToken);
-            if (decoded && decoded.username) { // Assuming 'username' is the claim name
-                document.getElementById("usernameDisplay").textContent = decoded.username;
-                document.getElementById("welcomeSection").style.display = '';
-                document.getElementById("logoutButton").style.display = '';
-                document.getElementById("loginButton").style.display = 'none';
-                document.getElementById("registerButton").style.display = 'none';
-                userData = await fetchUserData();
-                if(userData.profile.profile_picture)
-                    document.getElementById("profile_pic").src = userData.profile.profile_picture;
+            if (decoded) {
+                updateUIOnLogin();
             } else {
                 handleLoggedOutState();
             }
@@ -63,12 +56,30 @@ async function fetchUserData() {
     }
 }
 
-function handleLoggedOutState() {
+async function updateUIOnLogin() {
+    document.getElementById("welcomeSection").style.display = '';
+    document.getElementById("logoutButton").style.display = '';
+    document.getElementById("loginButton").style.display = 'none';
+    document.getElementById("registerButton").style.display = 'none';
+    userData = await fetchUserData();
+    if(userData.profile.profile_picture){
+        document.getElementById("profile_pic").src = userData.profile.profile_picture;
+        document.getElementById("usernameDisplay").textContent = userData.username;
+    }
+}
+
+async function handleLoggedOutState() {
+    console.log("Logged out")
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    document.getElementById("usernameDisplay").textContent = '';
     document.getElementById("welcomeSection").style.display = 'none';
-    document.getElementById("logoutButton").style.display = 'none';
     document.getElementById("loginButton").style.display = '';
     document.getElementById("registerButton").style.display = '';
+    document.getElementById("logoutButton").style.display = 'none';
     document.getElementById("profile_pic").display = 'none';
+    document.getElementById("profile_pic").src = "";
+    document.getElementById("profile_settings").style.display = 'none';
 }
 
 async function postLogin() {
@@ -94,15 +105,7 @@ async function postLogin() {
         localStorage.setItem("refreshToken", data.refresh);
 
         // Update UI after login
-        document.getElementById("usernameDisplay").textContent = username;
-        document.getElementById("welcomeSection").style.display = '';
-        document.getElementById("logoutButton").style.display = '';
-        document.getElementById("loginButton").style.display = 'none';
-        document.getElementById("registerButton").style.display = 'none';
-        userData = await fetchUserData();
-        if(userData.profile.profile_picture)
-            document.getElementById("profile_pic").src = userData.profile.profile_picture;
-
+        updateUIOnLogin();
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
@@ -133,15 +136,7 @@ async function loginAfterRegister(username, password) {
         localStorage.setItem("refreshToken", data.refresh);
 
         // Update UI after login
-        document.getElementById("usernameDisplay").textContent = username;
-        document.getElementById("welcomeSection").style.display = '';
-        document.getElementById("logoutButton").style.display = '';
-        document.getElementById("loginButton").style.display = 'none';
-        document.getElementById("registerButton").style.display = 'none';
-        userData = await fetchUserData();
-        if(userData.profile.profile_picture)
-            document.getElementById("profile_pic").src = userData.profile.profile_picture;
-
+        updateUIOnLogin();
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
@@ -186,18 +181,6 @@ async function postRegister() {
         }
     }
 
-}
-
-async function Logout() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
-    document.getElementById("usernameDisplay").textContent = '';
-    document.getElementById("welcomeSection").style.display = 'none';
-    document.getElementById("loginButton").style.display = '';
-    document.getElementById("registerButton").style.display = '';
-    document.getElementById("logoutButton").style.display = 'none';
-    document.getElementById("profile_pic").display = 'none';
-    document.getElementById("profile_pic").src = "";
 }
 
 async function verifyTokenAndExecute(callback) {
@@ -279,4 +262,16 @@ function redirectToOAuthProvider() {
     console.log('Auth URL:', authUrl);
 
     window.location.href = authUrl; // This will redirect the user to the OAuth provider
+}
+
+async function loadProfile(){
+    document.getElementById("profile_settings").style.display = '';
+    userData = await fetchUserData();
+    if(userData){
+        document.getElementById("profile_page_pic").src = userData.profile.profile_picture;
+        document.getElementById("profile_settings_name").textContent = userData.username;
+        document.getElementById("profile_wins").textContent = userData.profile.wins;
+        document.getElementById("profile_losses").textContent = userData.profile.losses;
+        document.getElementById("profile_name").textContent = userData.username;
+    }
 }

@@ -7,6 +7,7 @@
     <!-- Link to Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="../static/css/style.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" role="navigation">
@@ -25,10 +26,10 @@
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text text-white mr-3" id="welcomeSection">Welcome, <span id="usernameDisplay"></span>!</span>
-                        <img class="img-fluid rounded-circle" id="profile_pic" style="max-width: 40px; height: auto;">
+                        <img onclick="loadProfile()" class="img-fluid rounded-circle" id="profile_pic" style="max-width: 40px; height: auto;">
                     </li>
                     <li class="nav-item">
-                        <button type="button" id="logoutButton" style="display: none;" onclick="Logout()" class="btn btn-outline-secondary">Log out</button>
+                        <button type="button" id="logoutButton" style="display: none;" onclick="handleLoggedOutState()" class="btn btn-outline-secondary">Log out</button>
                     </li>
                     <li class="dropdown order-1" id="loginButton">
                         <button type="button" data-toggle="dropdown" class="btn btn-outline-secondary dropdown-toggle">Login <span class="caret"></span></button>
@@ -81,6 +82,28 @@
             </div>
         </div>
     </nav>
+    <div class="container rounded bg-white mt-5 mb-5"  id="profile_settings" style="display: none;">
+        <div class="row">
+            <div class="col-md-3 border-right">
+                <div class="d-flex flex-column align-items-center text-center p-3 py-5"><img class="rounded-circle mt-5" width="150px" id="profile_page_pic" src=""><span id="profile_settings_name" class="font-weight-bold"></span></div>
+            </div>
+            <div class="col-md-5 border-right">
+                <div class="p-3 py-5">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 class="text-right">Profile Settings</h4>
+                    </div>
+                    <div class="row mt-3">
+                        <div class="col-md-12"><label class="labels">Name</label><input type="text" class="form-control" style="display: none;"><p id="profile_name"></p></div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-md-6"><label class="labels">Wins</label><p type="text" id="profile_wins"></p></div>
+                        <div class="col-md-6"><label class="labels">Losses</label><p type="text" id="profile_losses"></p></div>
+                    </div>
+                    <div class="mt-5 text-center"><button class="btn btn-primary profile-button" type="button">Save Profile</button></div>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="../static/js/script.js"></script>
     <!-- Link to jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
