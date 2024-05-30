@@ -75,10 +75,6 @@
 	display:block
 }
 
-.register{
-	width: 1000px;
-}
-
 #profile_pic:hover{
 	cursor: pointer;
 	scale: 1.1;
