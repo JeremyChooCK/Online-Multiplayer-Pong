@@ -275,3 +275,26 @@ async function loadProfile(){
         document.getElementById("profile_name").textContent = userData.username;
     }
 }
+
+function editName(){
+    document.getElementById("profile_name").style.display = 'none';
+    document.getElementById("profile_name_input").style.display = '';
+    document.getElementById("profile_name_input").value = userData.username;
+    document.getElementById("change_profile").style.display = '';
+    document.getElementById("edit_name").style.display = 'none';
+}
+
+function cancelNameChange(){
+    document.getElementById("profile_name").style.display = '';
+    document.getElementById("profile_name_input").style.display = 'none';
+    document.getElementById("change_profile").style.display = 'none';
+    document.getElementById("edit_name").style.display = '';
+}
+
+function saveProfileChanges(){
+    
+}
+
+document.getElementById('profile_page_pic').addEventListener('click', function() {
+    document.getElementById('profile_page_pic_input').click();
+});

@@ -85,7 +85,11 @@
     <div class="container rounded bg-white mt-5 mb-5"  id="profile_settings" style="display: none;">
         <div class="row">
             <div class="col-md-3 border-right">
-                <div class="d-flex flex-column align-items-center text-center p-3 py-5"><img class="rounded-circle mt-5" width="150px" id="profile_page_pic" src=""><span id="profile_settings_name" class="font-weight-bold"></span></div>
+                <div class="d-flex flex-column align-items-center text-center p-3 py-5">
+                    <img class="rounded-circle mt-5" width="150px" id="profile_page_pic" src="">
+                    <input id="profile_page_pic_input" type="file" style="display: none;">
+                    <span id="profile_settings_name" class="font-weight-bold"></span>
+                </div>
             </div>
             <div class="col-md-5 border-right">
                 <div class="p-3 py-5">
@@ -93,13 +97,19 @@
                         <h4 class="text-right">Profile Settings</h4>
                     </div>
                     <div class="row mt-3">
-                        <div class="col-md-12"><label class="labels">Name</label><input type="text" class="form-control" style="display: none;"><p id="profile_name"></p></div>
+                        <div class="col-md-12"><label class="labels">Name  <i id="edit_name" onclick="editName()" class="fa-solid fa-pen-to-square"></i></label>
+                            <input id="profile_name_input" type="text" class="form-control" style="display: none;">
+                            <p id="profile_name"></p>
+                        </div>
                     </div>
                     <div class="row mt-2">
                         <div class="col-md-6"><label class="labels">Wins</label><p type="text" id="profile_wins"></p></div>
                         <div class="col-md-6"><label class="labels">Losses</label><p type="text" id="profile_losses"></p></div>
                     </div>
-                    <div class="mt-5 text-center"><button class="btn btn-primary profile-button" type="button">Save Profile</button></div>
+                    <div id="change_profile" class="mt-5 text-center" style="display: none;">
+                        <button class="btn btn-primary profile-button" type="button">Save</button>
+                        <button onclick="cancelNameChange()" class="btn btn-primary profile-button" type="button">Cancel</button>
+                    </div>
                 </div>
             </div>
         </div>

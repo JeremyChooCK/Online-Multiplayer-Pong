@@ -78,5 +78,16 @@
 #profile_pic:hover{
 	cursor: pointer;
 	scale: 1.1;
-	transition: 1s;
+	transition: .1s;
+}
+
+#edit_name:hover{
+	cursor: pointer;
+	scale: 1.1;
+}
+
+#profile_page_pic:hover{
+	cursor: pointer;
+	filter: brightness(0) saturate(10%) invert(43%) sepia(2%) saturate(1901%) hue-rotate(177deg) brightness(94%) contrast(83%);
+	transition: .1s;
 }
