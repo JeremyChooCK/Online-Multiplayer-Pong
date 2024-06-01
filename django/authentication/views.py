@@ -13,6 +13,7 @@ import requests
 import os
 import environ
 import json
+import urllib.request
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -60,82 +61,65 @@ def get_user_info(access_token):
     return response.json()
 
 def oauth_callback(request):
-    # Get the 'code' parameter from the request's GET parameters, which is sent by the OAuth provider.
     code = request.GET.get('code')
     if code:
-        # Exchange the authorization code for an access token using a helper function.
         access_token_response = exchange_code_for_token(code)
-        
-        # Check if the response contains an 'access_token'.
         if 'access_token' in access_token_response:
-            # Extract the access token from the response.
             access_token = access_token_response['access_token']
-            
-            # Use the access token to retrieve user information from the OAuth provider.
             user_info = get_user_info(access_token)
-            # Get the user model from Django's authentication framework.
+
             User = get_user_model()
-            
-            # Create or get a user in your database. Assume the user info includes 'login' and 'email'.
+            email = user_info.get('email', '').lower()  # Normalize the email
+
             user, created = User.objects.get_or_create(
-                username=user_info['login'], 
+                email=email,
                 defaults={
-                    'email': user_info.get('email', ''),  # Default email to empty string if not provided.
-                    'first_name': user_info.get('first_name', '')  # Default first_name to empty string if not provided.
+                    'username': user_info['login'],  # Set username here only on creation
+                    'first_name': user_info.get('first_name', '')
                 }
             )
-            
-            # If the user was created, set an unusable password (since authentication is handled via OAuth).
-            if created:
-                user.set_unusable_password()
-                user.save()
-                
-                # Create the UserProfile for the new user.
-                import urllib.request
-                
-                # Download the profile picture
-                profile_picture_url = user_info.get('image', {}).get('link', '')
-                if profile_picture_url:
-                    username = user.username
-                    file_name = f'{username}.png'
-                    file_path = os.path.join('profile_pictures', os.path.basename(profile_picture_url))  # Replace with the actual path where you want to save the image
-                    print( "FILE PATH: ",file_path)
-                    # Download the image and save it to the specified path
-                    urllib.request.urlretrieve(profile_picture_url, os.path.join(settings.MEDIA_ROOT, file_path))
-                    
-                    # Create the UserProfile for the new user with the file path
-                    UserProfile.objects.create(
-                        user=user,
-                        profile_picture=file_path,
-                        wins=0,
-                        losses=0,
-                        match_history=''
-                    )
 
-            # Generate a refresh token for the user. This token can be used to get new access tokens.
+            if not created:
+                # Update only non-identity fields if needed, skip username if you allow users to change it
+                user.first_name = user_info.get('first_name', user.first_name)
+                user.save()
+
+            # Handle user profile and picture separately to avoid repeating it
+            if created:
+                handle_user_profile_creation(user, user_info)
+
+            # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
-            
-            # Customize the token to include the first_name from the OAuth provider's data.
             refresh['username'] = user_info.get('first_name', '')
 
-            # Prepare the token data for response.
             jwt_tokens = {
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             }
 
-            # Redirect to a page that handles these tokens. Passing tokens via URL is not secure for production!
             redirect_url = reverse('oauth_token') + f"?access={jwt_tokens['access']}&refresh={jwt_tokens['refresh']}"
             return HttpResponseRedirect(redirect_url)
         else:
-            # Handle cases where the access token is not retrieved.
             error_details = access_token_response.get('details', {})
-            return HttpResponse(f"Failed to retrieve access token. Details: {json.dumps(error_details)}")
+            return HttpResponse(f"Failed to retrieve access token. Details: {json.dumps(error_details)}", status=400)
     else:
-        # Handle cases where no code is provided in the request.
         error = request.GET.get('error', 'Unknown error')
-        return HttpResponse(f"Failed to authorize: {error}")
+        return HttpResponse(f"Failed to authorize: {error}", status=400)
 
+def handle_user_profile_creation(user, user_info):
+    profile_picture_url = user_info.get('image', {}).get('link', '')
+    if profile_picture_url:
+        file_path = os.path.join('profile_pictures', f"{user.username}.png")
+        full_path = os.path.join(settings.MEDIA_ROOT, file_path)
+        urllib.request.urlretrieve(profile_picture_url, full_path)
+
+        UserProfile.objects.create(
+            user=user,
+            profile_picture=file_path,
+            wins=0,
+            losses=0,
+            match_history=''
+        )
 
 
 def exchange_code_for_token(code):

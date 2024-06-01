@@ -50,6 +50,7 @@ async function fetchUserData() {
         console.error('Fetch error:', error);
         if (error.message === "Unauthorized") {
             alert("Invalid credentials");
+            handleLoggedOutState();
         } else {
             alert("An error occurred while fetching the data");
         }
@@ -338,8 +339,9 @@ async function updateUserName(newUsername, token) {  // Added token parameter
         }
         const data = await response.json();
         console.log('successfully updated name');
-        document,getElementById("usernameDisplay").textContent = newUsername;
+        document.getElementById("usernameDisplay").textContent = newUsername;
         document.getElementById("profile_name").textContent = newUsername;
+        document.getElementById("profile_settings_name").textContent = newUsername;
     }
     catch (error) {
         console.error('Fetch error:', error);
