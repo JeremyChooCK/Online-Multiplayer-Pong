@@ -292,8 +292,60 @@ function cancelNameChange(){
 }
 
 function saveProfileChanges(){
-    
+    let newUsername = document.getElementById("profile_name_input").value;
+    if(newUsername === ""){
+        alert("Name cannot be empty");
+        return;
+    }
+    if (newUsername === userData.username){
+        alert("No changes made");
+        return;
+    }
+    if(newUsername.length > 12){
+        alert("Name too long");
+        return;
+    }
+    if(newUsername.length < 3){
+        alert("Name too short");
+        return;
+    }
+    if(newUsername.includes(" ")){
+        alert("Name cannot contain spaces");
+        return;
+    }
+    if (newUsername != userData.username){
+        console.log("Updating name");
+        let token = localStorage.getItem("accessToken");
+        updateUserName(newUsername, token);
+        cancelNameChange();
+    }
 }
+
+async function updateUserName(newUsername, token) {  // Added token parameter
+    console.log("ACCESS TOKEN: ", token);
+    try {
+        const response = await fetch(ip + "auth/edit/name", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + token  // Include the JWT token in the Authorization header
+            },
+            body: JSON.stringify({ new_username: newUsername }), // Ensure this matches the expected key in Django
+        });
+        if (!response.ok) {
+            console.log("Response:", response);
+            throw new Error('Unauthorized');
+        }
+        const data = await response.json();
+        console.log('successfully updated name');
+        document,getElementById("usernameDisplay").textContent = newUsername;
+        document.getElementById("profile_name").textContent = newUsername;
+    }
+    catch (error) {
+        console.error('Fetch error:', error);
+    }
+}
+
 
 document.getElementById('profile_page_pic').addEventListener('click', function() {
     document.getElementById('profile_page_pic_input').click();

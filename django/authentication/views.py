@@ -15,6 +15,7 @@ import environ
 import json
 from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse
@@ -160,3 +161,22 @@ class UserDetailView(generics.RetrieveAPIView):
 
     def get_object(self):
         return self.request.user
+
+class UpdateUsernameView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        print("Authorization Header:", request.headers.get('Authorization'))
+        print("User:", request.user)  # Debug: print user information
+        print("Auth:", request.auth)   # Debug: print auth information
+        new_username = request.data.get('new_username')
+        if not new_username:
+            return Response({'error': 'New username is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not request.user.is_authenticated:
+            return Response({'error': 'YOOOOOOOOOOOOOOOOO'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        user = request.user
+        user.username = new_username
+        user.save()
+        return Response({'message': 'Username updated successfully'}, status=status.HTTP_200_OK)

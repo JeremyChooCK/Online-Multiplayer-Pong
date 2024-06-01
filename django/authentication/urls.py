@@ -1,5 +1,5 @@
 from django.urls import path
-from authentication.views import MyTokenObtainPairView, UserCreate, oauth_callback, UserDetailView
+from authentication.views import MyTokenObtainPairView, UserCreate, oauth_callback, UserDetailView, UpdateUsernameView
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
@@ -12,4 +12,5 @@ urlpatterns = [
     path('register/', UserCreate.as_view(), name='register'),
 	path('oauth/', oauth_callback, name='oauth_callback'),
     path('user_details/', UserDetailView.as_view(), name='user_details'), 
+	path('edit/name', UpdateUsernameView.as_view(), name='edit_name'),
 ]
