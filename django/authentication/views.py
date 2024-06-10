@@ -24,6 +24,7 @@ from django.http import HttpResponseRedirect
 from rest_framework import generics, permissions
 from .models import UserProfile
 from django.conf import settings
+from django.views.decorators.csrf import csrf_protect
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -164,3 +165,24 @@ class UpdateUsernameView(APIView):
         user.username = new_username
         user.save()
         return Response({'message': 'Username updated successfully'}, status=status.HTTP_200_OK)
+
+class ChangeProfilePictureView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        print(request.__dict__)
+        print("in cpp")
+
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            image_file = request.FILES.get('profile_picture')
+            if not image_file:
+                return Response({'error': 'No image file provided'}, status=400)
+            
+            user_profile.profile_picture.save(image_file.name, image_file)
+            user_profile.save()
+            return Response({'message': 'Profile picture updated successfully'}, status=200)
+        except UserProfile.DoesNotExist:
+            return Response({'error': 'UserProfile does not exist'}, status=404)
+        except Exception as e:
+            return Response({'error': str(e)}, status=500)

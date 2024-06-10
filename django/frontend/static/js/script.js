@@ -348,7 +348,61 @@ async function updateUserName(newUsername, token) {  // Added token parameter
     }
 }
 
-
-document.getElementById('profile_page_pic').addEventListener('click', function() {
-    document.getElementById('profile_page_pic_input').click();
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('profile_page_pic').addEventListener('click', function() {
+        document.getElementById('profile_page_pic_input').click();
+    });
 });
+
+document.getElementById('profile_page_pic_input').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('profile_page_pic').src = e.target.result;
+            document.getElementById('profile_pic').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+        uploadFile(file);  // Call a function to handle the file upload
+    }
+});
+
+async function uploadFile(file) {
+    
+    try {
+        const formData = new FormData();
+        formData.append('profile_picture', file);
+        const token = localStorage.getItem("accessToken");
+        console.log("dsadsadsadsadsadsadsad TOKEN: ", token);
+        const csrfToken = getCookie('csrftoken'); // Function to get CSRF token from cookies
+        console.log("CSRF Token: ", csrfToken);
+        const response = await fetch(ip + "auth/edit/picture", {
+            method: "POST",
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                "X-CSRFToken": csrfToken // Include CSRF token here
+
+            },
+            body: formData
+        });
+        if (!response.ok) {
+            console.log("Response:", response);
+            throw new Error('Failed to upload image');
+        }
+        const data = await response.json();
+        console.log('successfully uploaded picture');
+        data = fetchUserData();
+        console.log("AAAAAAAAAAAAAA", data);
+        document.getElementById("profile_pic").src = data.profile_picture;
+        document.getElementById("profile_page_pic").src = data.profile_picture;
+    }
+    catch (error) {
+        console.error('Error:', error);
+    }
+}
+
+function getCookie(name) {
+    let value = `; ${document.cookie}`;
+    let parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+}
