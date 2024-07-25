@@ -16,4 +16,4 @@ RUN pip install --upgrade pip && pip install -r requirements.txt
 COPY . /code/
 
 # Run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "your_project.wsgi:application"]
+CMD ["uvicorn", "transcendance.asgi:application", "--host", "0.0.0.0", "--port", "8000"]

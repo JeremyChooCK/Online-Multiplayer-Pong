@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 	'social_django',
+	'channels',
 ]
 
 SOCIAL_AUTH_JSONFIELD_ENABLED = True
@@ -150,7 +151,15 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'transcendance.wsgi.application'
+ASGI_APPLICATION = 'transcendance.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('redis', 6379)],  # adjust if your Redis server is elsewhere
+        },
+    },
+}
 
 # settings.py
 

@@ -21,7 +21,7 @@ services:
       python manage.py makemigrations &&
       python manage.py migrate &&
       python manage.py collectstatic --noinput &&
-      gunicorn transcendance.wsgi:application --bind 0.0.0.0:8000"
+      uvicorn transcendance.asgi:application --host 0.0.0.0 --port 8000"
     volumes:
       - ./django:/code
       - static_volume:/usr/share/nginx/static
@@ -31,6 +31,7 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_PORT=${POSTGRES_PORT}
+      - DJANGO_SETTINGS_MODULE=transcendance.settings
     depends_on:
       - db
     networks:
@@ -50,6 +51,14 @@ services:
       - web
     networks:
       - transcendance_network
+
+  redis:
+    image: "redis:latest"
+    ports:
+      - "6379:6379"
+    networks:
+      - transcendance_network
+
 
 volumes:
   postgres_data:
