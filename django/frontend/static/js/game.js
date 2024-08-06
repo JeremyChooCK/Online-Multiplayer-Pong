@@ -7,21 +7,47 @@ const player2Score = document.getElementById('player2Score');
 const startButton = document.getElementById('startButton');
 
 gameSocket.onmessage = function(event) {
-    console.log("Message received: ", event.data);
+    // console.log("Message received: ", event.data);
     const data = JSON.parse(event.data);
-    ball.style.left = `${data.ball_position.x}%`;
-    ball.style.top = `${data.ball_position.y}%`;
-    paddle1.style.top = `${data.paddle_positions.player1}%`;
-    paddle2.style.top = `${data.paddle_positions.player2}%`;
+
+    if (data.ball_position) {
+        ball.style.left = `${data.ball_position.x}%`;
+        ball.style.top = `${data.ball_position.y}%`;
+    }
+
+    if (data.paddle_positions) {
+        // Assuming 'player1' and 'player2' are the keys for paddle positions
+        if (data.paddle_positions.player1 !== undefined) {
+            paddle1.style.top = `${data.paddle_positions.player1}%`;
+        }
+        if (data.paddle_positions.player2 !== undefined) {
+            paddle2.style.top = `${data.paddle_positions.player2}%`;
+        }
+    }
+
     // Update scores
-    player1Score.textContent = data.score.player1;
-    player2Score.textContent = data.score.player2;
+    if (data.score) {
+        player1Score.textContent = data.score.player1;
+        player2Score.textContent = data.score.player2;
+    }
+    // Handling the game over message
+    if (data.type === 'game_over') {
+        console.log("Data received: ", data);
+        alert(data.message);  // Display the game over message in an alert
+        const winMessage = document.getElementById('winMessage');
+        if (winMessage) {
+            winMessage.textContent = data.message;  // Optionally display it on the webpage
+        }
+        gameSocket.close();  // Close the WebSocket after the game is over
+    }
 };
+
 
 gameSocket.onopen = function() {
     startButton.addEventListener('click', function() {
         gameSocket.send(JSON.stringify({
-            'action': 'start_game'
+            'action': 'start_game',
+            'user_id': 1 
         }));
     });
 };
@@ -33,7 +59,7 @@ document.addEventListener('keydown', function(event) {
         gameSocket.send(JSON.stringify({
             action: 'move_paddle',
             position: newPosition,
-            user_id: 'player1'  // Ensure this is correctly identified
+            user_id: 1  // Use a numeric value for user_id
         }));
     }
 });
@@ -46,3 +72,8 @@ function getPaddlePosition(key) {
         return Math.min(currentTop + 20, document.getElementById('pongGame').offsetHeight - paddle1.offsetHeight);  // Move down by increasing the top value
     }
 }
+
+gameSocket.onclose = function(event) {
+    console.log('WebSocket closed. If the game is over, redirect or handle post-game actions.');
+    // Optionally, redirect to a different page or display any relevant UI element
+};

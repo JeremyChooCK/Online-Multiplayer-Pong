@@ -48,13 +48,15 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         print(f"Received paddle move: User {user_id}, Position {position}")
         user = await self.get_user_from_id(user_id)
         if user:
-            self.paddle_positions[user.username] = position
+            # Map user_id to username or any unique identifier
+            username = f'player{user_id}'  # Assuming user_id 1 maps to player1, and so on
+            self.paddle_positions[username] = position
             # Broadcast the new position
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
                     'type': 'send_paddle_position',
-                    'paddle_position': position,
+                    'paddle_position': self.paddle_positions,
                     'user_id': user_id
                 }
             )
@@ -62,13 +64,12 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def send_paddle_position(self, event):
         paddle_position = event['paddle_position']
         user_id = event['user_id']
-		# Send message to WebSocket
+        # Send message to WebSocket
         print(f"Broadcasting position update: {event}")
         await self.send(text_data=json.dumps({
-			'user_id': event['user_id'],
-			'paddle_position': event['paddle_position']
-		}))
-
+            'paddle_positions': paddle_position,
+            'user_id': event['user_id']
+        }))
 
     async def game_loop(self):
         while True:
@@ -78,7 +79,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                 {
                     'type': 'ball_movement',
                     'ball_position': self.ball_position,
-                    'score': self.score
+                    'score': self.score,
+                    'paddle_positions': self.paddle_positions  # Include paddle positions
                 }
             )
             await asyncio.sleep(0.016)  # Frame update (~60fps)
@@ -106,6 +108,40 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         elif self.ball_position['x'] >= 100:
             self.score['player1'] += 1
             self.reset_ball()
+        if self.ball_position['x'] <= 0:
+            self.score['player2'] += 1
+            self.reset_ball()
+        elif self.ball_position['x'] >= 100:
+            self.score['player1'] += 1
+            self.reset_ball()
+        print(f"Score: {self.score}")
+        if self.score['player1'] >= 3 or self.score['player2'] >= 3:
+            self.game_active = False  # Stop the game loop
+            print("Game Over!")
+            asyncio.create_task(self.game_over())  # Properly call the asynchronous game_over method
+
+    async def game_over(self):
+        if self.score['player1'] > self.score['player2']:
+            winner = 'player1'
+        else:
+            winner = 'player2'
+        message = f'Game Over! {winner} wins!'
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'broadcast_message',
+                'message': message
+            }
+        )
+
+    async def broadcast_message(self, event):
+        message = event['message']
+        await self.send(text_data=json.dumps({
+            'type': 'game_over',
+            'message': message
+        }))
+        await self.close()  # Close the WebSocket connection
+
 
     def reset_ball(self):
         # Reset ball position to center and randomize start direction
@@ -117,11 +153,18 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         score = event['score']
         await self.send(text_data=json.dumps({
             'ball_position': ball_position,
-            'score': score
+            'score': score,
+            'paddle_positions': self.paddle_positions  # Include paddle positions
         }))
 
     async def get_user_from_id(self, user_id):
         try:
-            return User.objects.get(pk=user_id)
+            # Ensure user_id is an integer
+            user_id = int(user_id)
+            return await User.objects.aget(pk=user_id)
+        except ValueError:
+            # Handle case where user_id is not an integer
+            print(f"Invalid user_id: {user_id}")
+            return None
         except User.DoesNotExist:
             return None
