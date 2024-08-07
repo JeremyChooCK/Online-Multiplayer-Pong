@@ -19,9 +19,11 @@ gameSocket.onmessage = function(event) {
         // Assuming 'player1' and 'player2' are the keys for paddle positions
         if (data.paddle_positions.player1 !== undefined) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
+            console.log("Paddle 1 position: ", data.paddle_positions.player1);
         }
         if (data.paddle_positions.player2 !== undefined) {
             paddle2.style.top = `${data.paddle_positions.player2}%`;
+            // console.log("Paddle 2 position: ", data.paddle_positions.player2);
         }
     }
 
@@ -52,24 +54,46 @@ gameSocket.onopen = function() {
     });
 };
 
-document.addEventListener('keydown', function(event) {
+function getPaddlePosition(key) {
+    const stepPercent = (20 / document.getElementById('pongGame').offsetHeight) * 100;  // Convert pixel step to percentage of total height
+    const currentPercent = parseFloat(paddle1.style.top) || 50;  // Default to 50% if not set
+
+    let newPercent;
+    if (key === 'ArrowUp') {
+        newPercent = Math.max(currentPercent - stepPercent, 0);
+        console.log(`ArrowUp Pressed: Current Percent=${currentPercent}, Step=${stepPercent}, New Percent=${newPercent}`);
+    } else if (key === 'ArrowDown') {
+        newPercent = Math.min(currentPercent + stepPercent, 100);
+        console.log(`ArrowDown Pressed: Current Percent=${currentPercent}, Step=${stepPercent}, New Percent=${newPercent}`);
+    }
+
+    paddle1.style.top = `${newPercent}%`; // Update the DOM using percentages
+    return newPercent;  // Send this to the server
+}
+
+document.addEventListener('keydown', throttle(function(event) {
     if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
         const newPosition = getPaddlePosition(event.key);
-        console.log("Sending new position: ", newPosition);
+        console.log("Sending new position to server: ", newPosition);
         gameSocket.send(JSON.stringify({
             action: 'move_paddle',
             position: newPosition,
-            user_id: 1  // Use a numeric value for user_id
+            user_id: 1  // Ensure the user ID is correctly managed
         }));
     }
-});
+}, 50));
 
-function getPaddlePosition(key) {
-    const currentTop = parseInt(window.getComputedStyle(paddle1).getPropertyValue("top"));
-    if (key === 'ArrowUp') {
-        return Math.max(currentTop - 20, 0);  // Move up by reducing the top value
-    } else if (key === 'ArrowDown') {
-        return Math.min(currentTop + 20, document.getElementById('pongGame').offsetHeight - paddle1.offsetHeight);  // Move down by increasing the top value
+
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
     }
 }
 

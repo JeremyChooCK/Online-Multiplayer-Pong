@@ -44,14 +44,29 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             await self.move_paddle(user_id, position)
 
     async def move_paddle(self, user_id, position):
-        # Update paddle position
+        username = f'player{user_id}'
+        current_position = self.paddle_positions[username]
+        max_top = 400  # Example maximum boundary for the top of the paddle
+        min_top = 0    # Minimum boundary
+
         print(f"Received paddle move: User {user_id}, Position {position}")
-        user = await self.get_user_from_id(user_id)
-        if user:
-            # Map user_id to username or any unique identifier
-            username = f'player{user_id}'  # Assuming user_id 1 maps to player1, and so on
+        # Calculate expected position range considering normal movement speed
+        max_expected_position = current_position + 20  # Assuming 20 is the max movement step allowed per update
+        min_expected_position = current_position - 20
+
+        # Validate the received position
+        if position > max_expected_position:
+            position = max_expected_position
+        elif position < min_expected_position:
+            position = min_expected_position
+
+        position = max(min(position, max_top), min_top)  # Ensure the position doesn't go out of game bounds
+
+        # Update and broadcast if validated position is different from the current one
+        if position != current_position:
             self.paddle_positions[username] = position
-            # Broadcast the new position
+            print ("current_position: ", current_position)
+            print(f"Validated paddle move: User {user_id}, Position {position}")
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -61,15 +76,16 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                 }
             )
 
+
     async def send_paddle_position(self, event):
         paddle_position = event['paddle_position']
         user_id = event['user_id']
-        # Send message to WebSocket
-        print(f"Broadcasting position update: {event}")
+        print(f"Sending paddle position: {paddle_position}")
         await self.send(text_data=json.dumps({
             'paddle_positions': paddle_position,
-            'user_id': event['user_id']
+            'user_id': user_id
         }))
+
 
     async def game_loop(self):
         while True:
@@ -114,11 +130,10 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         elif self.ball_position['x'] >= 100:
             self.score['player1'] += 1
             self.reset_ball()
-        print(f"Score: {self.score}")
-        if self.score['player1'] >= 3 or self.score['player2'] >= 3:
-            self.game_active = False  # Stop the game loop
-            print("Game Over!")
-            asyncio.create_task(self.game_over())  # Properly call the asynchronous game_over method
+        # print(f"Score: {self.score}")
+        # if self.score['player1'] >= 3 or self.score['player2'] >= 3:
+        #     self.game_active = False  # Stop the game loop
+        #     asyncio.create_task(self.game_over())  # Properly call the asynchronous game_over method
 
     async def game_over(self):
         if self.score['player1'] > self.score['player2']:
