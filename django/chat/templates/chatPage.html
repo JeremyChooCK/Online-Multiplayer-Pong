@@ -1,0 +1,595 @@
+{% comment %} <!DOCTYPE html>
+<html lang="en">
+<head>
+  <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
+  <style>
+    body {
+      background-color: #f7f7f7;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin: 0;
+    }
+
+    .chat-container {
+      width: 75%;
+      height: 100%;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: row;
+    }
+
+    .user-list {
+      width: 25%;
+      height: 100%;
+      background-color: #f1f1f1;
+      border-radius: 10px 0 0 10px;
+      padding: 10px;
+      overflow-y: auto;
+    }
+
+    .user-list p {
+      cursor: pointer;
+      padding: 5px;
+      margin: 2px;
+      border-radius: 2px;
+      transition: background-color 0.1s;
+    }
+
+    .user-list p:hover {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .user-list p.selected {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .chat-section {
+      width: 75%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Chat messages will be dynamically added here for each user */
+    .chat-messages {
+      flex-grow: 1;
+      padding: 15px;
+      overflow-y: auto;
+      display: none; /* Hidden by default, shown when a user is selected */
+      flex-direction: column;
+    }
+
+    .chat-message {
+      margin-bottom: 15px;
+      max-width: 80%;
+      padding: 10px 15px;
+      border-radius: 10px;
+      background-color: #e9ecef;
+      align-self: flex-start;
+      position: relative;
+      color: black;
+    }
+
+    .chat-message.sent {
+      background-color: #0056b3;
+      color: white;
+      align-self: flex-end;
+      text-align: left;
+    }
+
+    .timestamp {
+      font-size: 8px;
+      color: #999;
+      right: 10px;
+      text-align: right;
+    }
+
+    .timestamp.sent {
+      color: #d4d4d4;
+    }
+
+    .chat-input-container input:focus,
+    .chat-input-container button:focus {
+      outline: none;
+      box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="chat-container">
+    <div class="user-list" id="usernames">
+      <!-- Usernames will be added here -->
+    </div>
+    <div class="chat-section d-flex flex-column">
+      <div class="chat-header bg-primary text-white text-center p-2 d-none" id="chat-header">
+        <h1 class="h5 m-0" id="chat-header-text"></h1>
+      </div>
+      <!-- Chat messages for each user will be dynamically added here -->
+      <div class="chat-input-container d-flex p-3 border-top">
+        <input
+          type="text"
+          class="form-control mr-2"
+          id="id_message_send_input"
+          placeholder="Type your message..."
+        />
+        <button type="submit" class="btn btn-primary" id="id_message_send_button">
+          Send
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../static/js/chatScript.js"></script>
+</body>
+</html>
+ {% endcomment %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f7f7f7;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+      }
+
+      .chat-container {
+        width: 75%;
+        height: 100%;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: row;
+      }
+
+      .user-list {
+        width: 25%;
+        height: 100%;
+        background-color: #f1f1f1;
+        border-radius: 10px 0 0 10px;
+        padding: 10px;
+        overflow-y: auto;
+      }
+
+      .user-list p {
+        cursor: pointer;
+        padding: 5px;
+        margin: 2px;
+        border-radius: 2px;
+        transition: background-color 0.1s;
+      }
+
+      .user-list p:hover {
+        background-color: #007bff;
+        color: white;
+      }
+
+      .user-list p.selected {
+        background-color: #007bff;
+        color: white;
+      }
+
+      .chat-section {
+        width: 75%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-messages {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-message {
+        margin-bottom: 15px;
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 10px;
+        background-color: #e9ecef;
+        align-self: flex-start;
+        position: relative;
+        color: black;
+      }
+
+      .chat-message.sent {
+        background-color: #0056b3;
+        color: white;
+        align-self: flex-end;
+        text-align: left;
+      }
+
+      .timestamp {
+        font-size: 8px;
+        color: #999;
+        right: 10px;
+        text-align: right;
+      }
+
+      .timestamp.sent {
+        color: #D4D4D4;
+      }
+
+      .chat-input-container input:focus,
+      .chat-input-container button:focus {
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="user-list" id="usernames">
+        <!-- Usernames will be added here -->
+      </div>
+      <div class="chat-section d-flex flex-column">
+        <div class="chat-header bg-primary text-white text-center p-2 d-none" id="chat-header">
+          <h1 class="h5 m-0" id="chat-header-text"></h1>
+        </div>
+        <div class="chat-messages flex-grow-1 p-3 overflow-auto" id="id_chat_item_container">
+          <!-- Messages will be added here -->
+        </div>
+        <div class="chat-input-container d-flex p-3 border-top">
+          <input
+            type="text"
+            class="form-control mr-2"
+            id="id_message_send_input"
+            placeholder="Type your message..."
+          />
+          <button type="submit" class="btn btn-primary" id="id_message_send_button">
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let currentUser = localStorage.getItem('username');
+      let recipientId;
+
+      fetch('/chat/usernames/')
+        .then(response => response.json())
+        .then(usernames => {
+          const usernamesDiv = document.getElementById('usernames');
+          const chatHeader = document.getElementById('chat-header');
+          const chatHeaderText = document.getElementById('chat-header-text');
+
+          usernames.forEach(username => {
+            if (username !== currentUser) {
+              const chatTarget = document.createElement('p');
+              chatTarget.textContent = username;
+              chatTarget.onclick = () => {
+                // Remove 'selected' class from any previously selected username
+                const previouslySelected = document.querySelector('.user-list p.selected');
+                if (previouslySelected) {
+                  previouslySelected.classList.remove('selected');
+                }
+
+                // Add 'selected' class to the clicked username
+                chatTarget.classList.add('selected');
+
+                // Update the recipient input field with the selected username
+                recipientId = username;
+                chatHeaderText.textContent = recipientId;
+      
+                // Show or hide chat-header based on whether it has text
+                if (chatHeaderText.textContent.trim() === '') {
+                  chatHeader.classList.remove('d-block');
+                  chatHeader.classList.add('d-none');
+                } else {
+                  chatHeader.classList.remove('d-none');
+                  chatHeader.classList.add('d-block');
+                }              };
+              usernamesDiv.appendChild(chatTarget);
+            }
+          });
+        });
+
+      const chatSocket = new WebSocket("wss://" + window.location.host + "/ws/chat/");
+
+      function getTimeStamp(date) {
+        const day = date.toLocaleString('en-US', { weekday: 'short' });
+        const month = date.toLocaleString('en-US', { month: 'short' }); // 3-letter abbreviation of the month
+        const dayOfMonth = date.getDate().toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${dayOfMonth} ${month} ${year}, ${day} | ${hours}:${minutes}`;
+      }
+
+      chatSocket.onopen = function (e) {
+        chatSocket.send(
+          JSON.stringify({
+            type: "username",
+            content: currentUser,
+          })
+        );
+        console.log("The connection was setup successfully !");
+      };
+
+      chatSocket.onclose = function (e) {
+        console.log("Something unexpected happened !");
+      };
+
+      document.querySelector("#id_message_send_input").focus();
+      document.querySelector("#id_message_send_input").onkeyup = function (e) {
+        if (e.keyCode == 13) {
+          document.querySelector("#id_message_send_button").click();
+        }
+      };
+
+      document.querySelector("#id_message_send_button").onclick = function (e) {
+        var messageInput = document.querySelector("#id_message_send_input").value;        
+        if (!messageInput) {
+          console.log("Cannot send an empty message");
+          return;
+        }
+
+        var div = document.createElement("div");
+        div.className = "chat-message sent";
+        div.innerHTML = messageInput;
+
+        var timestamp = document.createElement("div");
+        timestamp.className = "timestamp sent";
+        timestamp.innerHTML = getTimeStamp(new Date());
+        div.appendChild(timestamp);
+
+        document.querySelector("#id_chat_item_container").appendChild(div);
+        document.querySelector("#id_chat_item_container").scrollTop =
+          document.querySelector("#id_chat_item_container").scrollHeight;
+
+        chatSocket.send(
+          JSON.stringify({
+            type: "message",
+            message: messageInput,
+            recipient_id: recipientId,
+          })
+        );
+
+        document.querySelector("#id_message_send_input").value = "";
+      };
+
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        var div = document.createElement("div");
+        div.className = "chat-message";
+        div.innerHTML = currentUser + ": " + data.message;
+
+        var timestamp = document.createElement("div");
+        timestamp.className = "timestamp";
+        timestamp.innerHTML = getTimeStamp(new Date());
+        div.appendChild(timestamp);
+
+        document.querySelector("#id_chat_item_container").appendChild(div);
+        document.querySelector("#id_chat_item_container").scrollTop =
+          document.querySelector("#id_chat_item_container").scrollHeight;
+      };
+    </script>
+  </body>
+</html>
+
+
+
+{% comment %} <!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        background-color: #f7f7f7;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 0;
+      }
+
+      .chat-container {
+        max-width: 600px;
+        height: 100%;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-messages {
+        flex-grow: 1;
+        padding: 15px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-message {
+        margin-bottom: 15px;
+        max-width: 80%;
+        padding: 10px 15px;
+        border-radius: 10px;
+        background-color: #e9ecef;
+        align-self: flex-start;
+        position: relative;
+        color: black;
+      }
+
+      .chat-message.sent {
+        background-color: #007bff;
+        color: white;
+        align-self: flex-end;
+        text-align: left;
+      }
+
+      .timestamp {
+        font-size: 8px;
+        color: #999;
+        right: 10px;
+        text-align: right;
+      }
+
+      .timestamp.sent {
+        color: #D4D4D4;
+      }
+
+      .chat-input-container input:focus,
+      .chat-input-container button:focus {
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container d-flex flex-column">
+      <div class="chat-header bg-primary text-white text-center p-3">
+        <h1 class="h4 m-0" id="welcome-message">Hello, Welcome to my chat site</h1>
+      </div>
+      <div class="chat-messages flex-grow-1 p-3 overflow-auto" id="id_chat_item_container">
+        <!-- Messages will be added here -->
+      </div>
+      <div class="chat-input-container d-flex p-3 border-top">
+        <input
+          type="text"
+          class="form-control mr-2"
+          id="id_recipient_id_input"
+          placeholder="Send to..."
+        />
+        <input
+          type="text"
+          class="form-control mr-2"
+          id="id_message_send_input"
+          placeholder="Type your message..."
+        />
+        <button type="submit" class="btn btn-primary" id="id_message_send_button">
+          Send
+        </button>
+      </div>
+    </div>
+
+    <script>
+      let curr_username = localStorage.getItem('username');
+      fetch('/chat/usernames/')
+        .then(response => response.json())
+        .then(usernames => {
+        const usernamesDiv = document.createElement('div');
+        usernamesDiv.id = 'usernames';
+        usernames.forEach(username => {
+          if (username !== curr_username) {
+            const p = document.createElement('p');
+            p.textContent = username;
+            usernamesDiv.appendChild(p);
+          }
+        });
+        document.body.appendChild(usernamesDiv);
+      });
+    </script>
+
+
+    <script>
+      const chatSocket = new WebSocket("wss://" + window.location.host + "/ws/chat/");
+      let username = localStorage.getItem('username');
+      document.getElementById('welcome-message').textContent += ', ' + username;
+
+      function getTimeStamp(date) {
+        const day = date.toLocaleString('en-US', { weekday: 'short' });
+        const month = date.toLocaleString('en-US', { month: 'short' }); // 3-letter abbreviation of the month
+        const dayOfMonth = date.getDate().toString().padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${dayOfMonth} ${month} ${year}, ${day} | ${hours}:${minutes}`;
+      }
+
+      chatSocket.onopen = function (e) {
+        chatSocket.send(
+          JSON.stringify({
+            type: "username",
+            content: username,
+          })
+        );
+        console.log("The connection was setup successfully !");
+      };
+
+      chatSocket.onclose = function (e) {
+        console.log("Something unexpected happened !");
+      };
+
+      document.querySelector("#id_message_send_input").focus();
+      document.querySelector("#id_message_send_input").onkeyup = function (e) {
+        if (e.keyCode == 13) {
+          document.querySelector("#id_message_send_button").click();
+        }
+      };
+
+      document.querySelector("#id_message_send_button").onclick = function (e) {
+        var messageInput = document.querySelector("#id_message_send_input").value;
+        var recipientId = document.querySelector("#id_recipient_id_input").value;
+        
+        if (!messageInput) {
+          console.log("Cannot send an empty message");
+          return;
+        }
+
+        var div = document.createElement("div");
+        div.className = "chat-message sent";
+        div.innerHTML = messageInput;
+
+        var timestamp = document.createElement("div");
+        timestamp.className = "timestamp sent";
+        timestamp.innerHTML = getTimeStamp(new Date());
+        div.appendChild(timestamp);
+
+        document.querySelector("#id_chat_item_container").appendChild(div);
+        document.querySelector("#id_chat_item_container").scrollTop =
+          document.querySelector("#id_chat_item_container").scrollHeight;
+
+        chatSocket.send(
+          JSON.stringify({
+            type: "message",
+            message: messageInput,
+            recipient_id: recipientId,
+          })
+        );
+
+        document.querySelector("#id_message_send_input").value = "";
+      };
+
+      chatSocket.onmessage = function (e) {
+        const data = JSON.parse(e.data);
+        var div = document.createElement("div");
+        div.className = "chat-message";
+        div.innerHTML = username + ": " + data.message;
+
+        var timestamp = document.createElement("div");
+        timestamp.className = "timestamp";
+        timestamp.innerHTML = getTimeStamp(new Date());
+        div.appendChild(timestamp);
+
+        document.querySelector("#id_chat_item_container").appendChild(div);
+        document.querySelector("#id_chat_item_container").scrollTop =
+          document.querySelector("#id_chat_item_container").scrollHeight;
+      };
+    </script>
+  </body>
+</html> {% endcomment %}

@@ -38,6 +38,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'corsheaders',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -49,6 +50,7 @@ INSTALLED_APPS = [
     'game',
     'api',
     'frontend',
+    'chat',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
 	'social_django',
@@ -154,6 +156,7 @@ TEMPLATES = [
 ASGI_APPLICATION = 'transcendance.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             'hosts': [('redis', 6379)],  # adjust if your Redis server is elsewhere

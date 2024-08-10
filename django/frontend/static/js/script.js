@@ -45,6 +45,7 @@ async function fetchUserData(user_id) {
 
         const data = await response.json();
         console.log("User Data: ", data);
+        localStorage.setItem('username', data.username);
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
@@ -499,6 +500,10 @@ function getCookie(name) {
     let value = `; ${document.cookie}`;
     let parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function getUsername() {
+    return localStorage.getItem('username');
 }
 
 function getUserIdPairs(){

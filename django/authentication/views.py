@@ -196,3 +196,7 @@ class UserIdPairsView(APIView):
         users = User.objects.all()
         user_id_pairs = {user.id: user.username for user in users}
         return JsonResponse(user_id_pairs, status=200)
+        
+def get_all_usernames(request):
+    usernames = User.objects.values_list('username', flat=True)
+    return JsonResponse(list(usernames), safe=False)
