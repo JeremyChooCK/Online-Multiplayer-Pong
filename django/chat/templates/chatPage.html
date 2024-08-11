@@ -1,4 +1,4 @@
-{% comment %} <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
@@ -56,12 +56,11 @@
       flex-direction: column;
     }
 
-    /* Chat messages will be dynamically added here for each user */
     .chat-messages {
       flex-grow: 1;
       padding: 15px;
       overflow-y: auto;
-      display: none; /* Hidden by default, shown when a user is selected */
+      display: none;
       flex-direction: column;
     }
 
@@ -77,7 +76,7 @@
     }
 
     .chat-message.sent {
-      background-color: #0056b3;
+      background-color: #007bff;
       color: white;
       align-self: flex-end;
       text-align: left;
@@ -99,19 +98,27 @@
       outline: none;
       box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
     }
+
+    .user-list-header {
+      margin-top: 10px;
+      color: black;
+      padding-bottom: 10px; 
+      border-bottom: 1px solid #ddd;
+    }
   </style>
 </head>
 <body>
   <div class="chat-container">
     <div class="user-list" id="usernames">
+      <h5 class="user-list-header">Chats</h5>
       <!-- Usernames will be added here -->
     </div>
     <div class="chat-section d-flex flex-column">
-      <div class="chat-header bg-primary text-white text-center p-2 d-none" id="chat-header">
+      <div class="chat-header bg-primary text-white text-center p-3 d-none" id="chat-header">
         <h1 class="h5 m-0" id="chat-header-text"></h1>
       </div>
       <!-- Chat messages for each user will be dynamically added here -->
-      <div class="chat-input-container d-flex p-3 border-top">
+      <div class="chat-input-container d-none p-3 border-top" id="chat-input-container">
         <input
           type="text"
           class="form-control mr-2"
@@ -128,9 +135,29 @@
   <script src="../static/js/chatScript.js"></script>
 </body>
 </html>
- {% endcomment %}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% comment %} 
 <!DOCTYPE html>
 <html lang="en">
   <head>
