@@ -44,9 +44,15 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
     async def move_paddle(self, user_id, position):
         username = f'player{user_id}'
-        # Clamp the position between 0 and 100
-        new_position = max(0, min(position, 100))
+        # Assuming the paddle height is 15% of the game field
+        paddle_height_percent = 15  # Half of the paddle's height in percentage
+        min_position = 1  # Minimum boundary considering half paddle height
+        max_position = 99 - paddle_height_percent  # Maximum boundary considering half paddle height
+
+        # Clamp the position between min_position and max_position
+        new_position = max(min_position, min(position, max_position))
         self.paddle_positions[username] = new_position
+
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -79,33 +85,42 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             await asyncio.sleep(0.016)  # Frame update (~60fps)
 
     def update_ball_position(self):
-        # Update ball position based on current velocity
-        self.ball_position['x'] = (self.ball_position['x'] + self.ball_velocity['vx']) % 100
-        self.ball_position['y'] = (self.ball_position['y'] + self.ball_velocity['vy']) % 100
-        self.handle_collisions()
+        # Calculate new potential positions
+        new_x = self.ball_position['x'] + self.ball_velocity['vx']
+        new_y = self.ball_position['y'] + self.ball_velocity['vy']
 
-    def handle_collisions(self):
-        # Reverses the y-velocity if ball hits the top or bottom boundary
-        if self.ball_position['y'] <= 0 or self.ball_position['y'] >= 100:
+        # Now apply wrapping for x-coordinate
+        self.ball_position['x'] = new_x % 100
+
+        # Check for boundary collisions before updating y-coordinate
+        if new_y < 0 or new_y > 100:
             self.ball_velocity['vy'] *= -1
+            # Ensure new_y stays within the game field
+            new_y = max(0, min(new_y, 100))
 
+        # Update y position after handling collisions
+        self.ball_position['y'] = new_y
+        self.handle_collisions(new_x, new_y)
+
+    def handle_collisions(self, new_x, new_y):
         # Handle paddle collisions
-        if (self.ball_position['x'] <= 10 and self.paddle_positions['player1'] <= self.ball_position['y'] <= self.paddle_positions['player1'] + 15) or \
-           (self.ball_position['x'] >= 90 and self.paddle_positions['player2'] <= self.ball_position['y'] <= self.paddle_positions['player2'] + 15):
+        if (new_x <= 10 and self.paddle_positions['player1'] <= new_y <= self.paddle_positions['player1'] + 15) or \
+        (new_x >= 90 and self.paddle_positions['player2'] <= new_y <= self.paddle_positions['player2'] + 15):
             self.ball_velocity['vx'] *= -1
 
-        # Check for ball passing left or right boundaries (past paddles)
-        if self.ball_position['x'] <= 0:
+        # Check for scoring
+        if new_x <= 0:
             self.score['player2'] += 1
             self.reset_ball()
-        elif self.ball_position['x'] >= 100:
+        elif new_x >= 100:
             self.score['player1'] += 1
             self.reset_ball()
 
     def reset_ball(self):
-        # Reset ball position to center and randomize the direction
+        # Reset ball position to center and adjust direction
         self.ball_position = {'x': 50, 'y': 50}
         self.ball_velocity = {'vx': random.choice([-2, 2]), 'vy': random.choice([-1, 1])}
+
 
     async def ball_movement(self, event):
         ball_position = event['ball_position']

@@ -9,7 +9,7 @@ const startButton = document.getElementById('startButton');
 gameSocket.onmessage = function(event) {
     // console.log("Message received: ", event.data);
     const data = JSON.parse(event.data);
-
+    // console.log("ball_position: ", data.ball_position);
     if (data.ball_position) {
         ball.style.left = `${data.ball_position.x}%`;
         ball.style.top = `${data.ball_position.y}%`;
@@ -55,33 +55,79 @@ gameSocket.onopen = function() {
 };
 
 function getPaddlePosition(key) {
-    const stepPercent = (20 / document.getElementById('pongGame').offsetHeight) * 100;  // Convert pixel step to percentage of total height
-    const currentPercent = parseFloat(paddle1.style.top) || 50;  // Default to 50% if not set
+    const pongGame = document.getElementById('pongGame');
+    const paddle = document.querySelector('.paddle');
 
-    let newPercent;
+    // Calculate the paddle's height as a percentage of its container
+    const paddleHeightPx = parseFloat(window.getComputedStyle(paddle).height);
+    const pongGameHeightPx = parseFloat(window.getComputedStyle(pongGame).height);
+    const paddleHeightPercent = (paddleHeightPx / pongGameHeightPx) * 100;
+
+    // Current top position as a percentage
+    const currentPercent = parseFloat(paddle.style.top.replace('%', '')) || 50;
+
+    // Determine the percentage step for each key press
+    const stepPercent = (60 / pongGameHeightPx) * 100;  // Using a fixed step of 60 pixels converted to percentage
+
+    let newPercent = currentPercent;
     if (key === 'ArrowUp') {
-        newPercent = Math.max(currentPercent - stepPercent, 0);
-        console.log(`ArrowUp Pressed: Current Percent=${currentPercent}, Step=${stepPercent}, New Percent=${newPercent}`);
+        newPercent = Math.max(currentPercent - stepPercent, 0);  // Ensure the paddle doesn't go above the top edge
     } else if (key === 'ArrowDown') {
-        newPercent = Math.min(currentPercent + stepPercent, 100);
-        console.log(`ArrowDown Pressed: Current Percent=${currentPercent}, Step=${stepPercent}, New Percent=${newPercent}`);
+        newPercent = Math.min(currentPercent + stepPercent, 100 - paddleHeightPercent);  // Adjust for paddle height
     }
 
-    paddle1.style.top = `${newPercent}%`; // Update the DOM using percentages
+    paddle.style.top = `${newPercent}%`;  // Update the DOM using percentages
     return newPercent;  // Send this to the server
 }
 
-document.addEventListener('keydown', throttle(function(event) {
-    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
-        const newPosition = getPaddlePosition(event.key);
-        console.log("Sending new position to server: ", newPosition);
-        gameSocket.send(JSON.stringify({
-            action: 'move_paddle',
-            position: newPosition,
-            user_id: 1  // Ensure the user ID is correctly managed
-        }));
+
+let isUpPressed = false;
+let isDownPressed = false;
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'ArrowUp') {
+        isUpPressed = true;
+    } else if (event.key === 'ArrowDown') {
+        isDownPressed = true;
     }
-}, 50));
+});
+
+document.addEventListener('keyup', function(event) {
+    if (event.key === 'ArrowUp') {
+        isUpPressed = false;
+    } else if (event.key === 'ArrowDown') {
+        isDownPressed = false;
+    }
+});
+
+let lastUpdateTime = 0;
+const updateInterval = 50; // Update every 50 milliseconds
+
+function updatePaddlePosition(timestamp) {
+    if (timestamp - lastUpdateTime > updateInterval) {
+        if (isUpPressed) {
+            const newPosition = getPaddlePosition('ArrowUp');
+            gameSocket.send(JSON.stringify({
+                action: 'move_paddle',
+                position: newPosition,
+                user_id: 1
+            }));
+        }
+        if (isDownPressed) {
+            const newPosition = getPaddlePosition('ArrowDown');
+            gameSocket.send(JSON.stringify({
+                action: 'move_paddle',
+                position: newPosition,
+                user_id: 1
+            }));
+        }
+        lastUpdateTime = timestamp;
+    }
+    requestAnimationFrame(updatePaddlePosition);
+}
+
+requestAnimationFrame(updatePaddlePosition);
+
 
 
 function throttle(func, limit) {
