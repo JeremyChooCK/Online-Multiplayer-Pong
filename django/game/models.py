@@ -13,11 +13,11 @@ class Game(models.Model):
 class Paddle(models.Model):
     game = models.ForeignKey(Game, related_name='paddles', on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    position = models.IntegerField(default=50)  # Y position on the screen
+    position = models.FloatField(default=50.0)  # Y position as percentage
 
 class Ball(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE)
-    position_x = models.IntegerField(default=50)
-    position_y = models.IntegerField(default=50)
-    velocity_x = models.IntegerField(default=1)
-    velocity_y = models.IntegerField(default=1)
+    position_x = models.FloatField(default=50.0)
+    position_y = models.FloatField(default=50.0)
+    velocity_x = models.FloatField(default=1.0)
+    velocity_y = models.FloatField(default=1.0)
