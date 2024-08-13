@@ -1,58 +1,58 @@
-const gameSocket = new WebSocket('wss://localhost/ws/game/');
+// const gameSocket = new WebSocket('wss://localhost/ws/game/');
 const paddle1 = document.getElementById('paddle1');
 const paddle2 = document.getElementById('paddle2');
 const ball = document.getElementById('ball');
 const player1Score = document.getElementById('player1Score');
 const player2Score = document.getElementById('player2Score');
 const startButton = document.getElementById('startButton');
+const joinButton = document.getElementById('joinButton');
+const messageBox = document.getElementById('messageBox');
+let gameSocket;
 
-gameSocket.onmessage = function(event) {
-    // console.log("Message received: ", event.data);
-    const data = JSON.parse(event.data);
-    // console.log("ball_position: ", data.ball_position);
-    if (data.ball_position) {
-        ball.style.left = `${data.ball_position.x}%`;
-        ball.style.top = `${data.ball_position.y}%`;
-    }
+joinButton.addEventListener('click', async function() {
+    gameSocket = new WebSocket('wss://localhost/ws/game/');
 
-    if (data.paddle_positions) {
-        // Assuming 'player1' and 'player2' are the keys for paddle positions
-        if (data.paddle_positions.player1 !== undefined) {
+    gameSocket.onopen = function() {
+        messageBox.innerText = "Connected. Waiting for another player...";
+    };
+
+    gameSocket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data.type === 'game_starting') {
+            messageBox.innerText = data.message;
+        } else if (data.type === 'notify') {
+            messageBox.innerText = data.message;
+        } else if (data.ball_position) {
+            ball.style.left = `${data.ball_position.x}%`;
+            ball.style.top = `${data.ball_position.y}%`;
+        }
+
+        if (data.paddle_positions) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
-            console.log("Paddle 1 position: ", data.paddle_positions.player1);
-        }
-        if (data.paddle_positions.player2 !== undefined) {
             paddle2.style.top = `${data.paddle_positions.player2}%`;
-            // console.log("Paddle 2 position: ", data.paddle_positions.player2);
         }
-    }
 
-    // Update scores
-    if (data.score) {
-        player1Score.textContent = data.score.player1;
-        player2Score.textContent = data.score.player2;
-    }
-    // Handling the game over message
-    if (data.type === 'game_over') {
-        console.log("Data received: ", data);
-        alert(data.message);  // Display the game over message in an alert
-        const winMessage = document.getElementById('winMessage');
-        if (winMessage) {
-            winMessage.textContent = data.message;  // Optionally display it on the webpage
+        if (data.score) {
+            player1Score.textContent = data.score.player1;
+            player2Score.textContent = data.score.player2;
         }
-        gameSocket.close();  // Close the WebSocket after the game is over
-    }
-};
 
+        if (data.type === 'game_over') {
+            alert(data.message);
+            gameSocket.close();
+        }
+    };
 
-gameSocket.onopen = function() {
-    startButton.addEventListener('click', function() {
-        gameSocket.send(JSON.stringify({
-            'action': 'start_game',
-            'user_id': 1 
-        }));
-    });
-};
+    gameSocket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        messageBox.innerText = "Connection error. Please refresh to try again.";
+    };
+
+    gameSocket.onclose = function() {
+        console.log('WebSocket closed unexpectedly.');
+        messageBox.innerText = "Disconnected. Please refresh to join again.";
+    };
+});
 
 function getPaddlePosition(key) {
     const pongGame = document.getElementById('pongGame');
@@ -142,8 +142,3 @@ function throttle(func, limit) {
         }
     }
 }
-
-gameSocket.onclose = function(event) {
-    console.log('WebSocket closed. If the game is over, redirect or handle post-game actions.');
-    // Optionally, redirect to a different page or display any relevant UI element
-};

@@ -1,78 +1,80 @@
 import json
 import asyncio
-from django.contrib.auth import get_user_model
 from channels.generic.websocket import AsyncWebsocketConsumer
 import random
 
-User = get_user_model()
-
 class PongGameConsumer(AsyncWebsocketConsumer):
-    ball_position = {'x': 50, 'y': 50}  # Start position at the center
-    ball_velocity = {'vx': 2, 'vy': 1}  # Initial velocity
+    ball_position = {'x': 50, 'y': 50}
+    ball_velocity = {'vx': 2, 'vy': 1}
     score = {'player1': 0, 'player2': 0}
-    paddle_positions = {'player1': 50, 'player2': 50}  # Mid-point of the paddles as percentages
+    paddle_positions = {'player1': 50, 'player2': 50}
+    room_group_name = 'pong_room'
+    player_count = 0
+    player_mapping = {}
 
     async def connect(self):
-        self.room_group_name = 'pong_room'
-
-        # Join room group
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-
         await self.accept()
-        # Start the game loop
-        self.game_loop_task = asyncio.create_task(self.game_loop())
+        PongGameConsumer.player_count += 1
+        player_number = 'player1' if PongGameConsumer.player_count % 2 != 0 else 'player2'
+        self.player_mapping[self.channel_name] = player_number
+
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+        await self.send(json.dumps({
+            'type': 'setup',
+            'player_number': player_number
+        }))
+
+        if PongGameConsumer.player_count % 2 == 0:  # Start game when two players are connected
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {'type': 'notify', 'message': 'Game is starting!'}
+            )
+            await self.start_game()
 
     async def disconnect(self, close_code):
-        # Leave room group
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-        self.game_loop_task.cancel()  # Cancel the game loop when client disconnects
+        player_number = self.player_mapping.get(self.channel_name)
+        if player_number:
+            PongGameConsumer.player_count -= 1
+            del self.player_mapping[self.channel_name]
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
     async def receive(self, text_data):
         data = json.loads(text_data)
         action = data.get('action')
-        user_id = data.get('user_id')
-
         if action == 'move_paddle':
             position = float(data.get('position'))
-            await self.move_paddle(user_id, position)
+            player_number = self.player_mapping.get(self.channel_name)
+            await self.move_paddle(player_number, position)
 
-    async def move_paddle(self, user_id, position):
-        username = f'player{user_id}'
-        # Assuming the paddle height is 15% of the game field
-        paddle_height_percent = 15  # Half of the paddle's height in percentage
-        min_position = 1  # Minimum boundary considering half paddle height
-        max_position = 99 - paddle_height_percent  # Maximum boundary considering half paddle height
-
-        # Clamp the position between min_position and max_position
+    async def move_paddle(self, player_number, position):
+        # Paddle moving logic here
+        min_position = 1
+        max_position = 85  # Adjusting for paddle height
         new_position = max(min_position, min(position, max_position))
-        self.paddle_positions[username] = new_position
-
+        self.paddle_positions[player_number] = new_position
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'send_paddle_position',
-                'paddle_positions': self.paddle_positions,
-                'user_id': user_id
+                'paddle_positions': self.paddle_positions
             }
         )
-
+    
     async def send_paddle_position(self, event):
         paddle_position = event['paddle_positions']
-        user_id = event['user_id']
         await self.send(text_data=json.dumps({
             'paddle_positions': paddle_position,
-            'user_id': user_id
         }))
 
+    async def start_game(self):
+        # Game starting logic here
+        self.game_loop_task = asyncio.create_task(self.game_loop())
+
     async def game_loop(self):
+        # Game loop logic here
         while True:
             self.update_ball_position()
+            await asyncio.sleep(0.016)  # 60 FPS
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -82,7 +84,17 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                     'paddle_positions': self.paddle_positions
                 }
             )
-            await asyncio.sleep(0.016)  # Frame update (~60fps)
+    
+    async def notify(self, event):
+        """
+        Handle 'notify' events to send a message to the WebSocket.
+        This method is triggered by 'group_send' with a type of 'notify'.
+        """
+        # Send the notification message to WebSocket
+        await self.send(json.dumps({
+            'type': 'notify',
+            'message': event['message']
+        }))
 
     def update_ball_position(self):
         # Calculate new potential positions
