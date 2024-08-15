@@ -2,6 +2,7 @@ import json
 import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 import random
+import datetime
 
 class PongGameConsumer(AsyncWebsocketConsumer):
     ball_position = {'x': 50, 'y': 50}
@@ -11,6 +12,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     room_group_name = 'pong_room'
     player_count = 0
     player_mapping = {}
+    ai = True
+    last_ai_update = None
 
     async def connect(self):
         await self.accept()
@@ -24,12 +27,60 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             'player_number': player_number
         }))
 
+        if PongGameConsumer.player_count == 1:  # If only one player, the second is AI
+            self.player_mapping['player2'] = 'player2'
+            PongGameConsumer.player_count += 1
+            self.ai = True
+
         if PongGameConsumer.player_count % 2 == 0:  # Start game when two players are connected
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {'type': 'notify', 'message': 'Game is starting!'}
             )
             await self.start_game()
+
+    async def move_ai_paddle(self):
+        print('AI Paddle task started')
+        try:
+            while self.ai:
+                print('Start of loop iteration')
+                current_time = datetime.datetime.now()
+                print('Current time:', current_time)
+                print('Last AI update:', self.last_ai_update)
+                if self.last_ai_update:
+                    time_difference = current_time - self.last_ai_update
+                else:
+                    time_difference = datetime.timedelta(seconds=100)
+                print('Time difference:', time_difference.total_seconds())
+
+                # Check if at least one second has passed
+                if not self.last_ai_update or time_difference.total_seconds() >= 0.3:
+                    print('Getting AI paddle position')
+                    ai_paddle_y = self.paddle_positions['player2']
+                    ball_y = self.ball_position['y']
+                    # Update the last AI update time
+                    self.last_ai_update = current_time
+
+                print(f'AI paddle Y: {ai_paddle_y}, Ball Y: {ball_y}')
+
+                if ball_y > ai_paddle_y + 10:  # +2 to prevent jittering
+                    ai_paddle_y = ai_paddle_y + 5  # Move down
+                elif ball_y < ai_paddle_y - 10:
+                    ai_paddle_y = ai_paddle_y - 5  # Move up
+
+                # Update the AI paddle position
+                print('New AI Paddle Y:', ai_paddle_y)
+                await self.move_paddle('player2', ai_paddle_y)
+
+                print('End of loop iteration')
+                await asyncio.sleep(0.1)
+
+        except Exception as e:
+            print(f'Error in move_ai_paddle: {str(e)}')
+            import traceback
+            print(traceback.format_exc())
+        
+        print('AI Paddle task ended')
 
     async def disconnect(self, close_code):
         player_number = self.player_mapping.get(self.channel_name)
@@ -47,6 +98,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             await self.move_paddle(player_number, position)
 
     async def move_paddle(self, player_number, position):
+        print('Player number', player_number, 'Paddle position:', position)
         # Paddle moving logic here
         min_position = 1
         max_position = 85  # Adjusting for paddle height
@@ -69,6 +121,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def start_game(self):
         # Game starting logic here
         self.game_loop_task = asyncio.create_task(self.game_loop())
+        if self.ai:
+            self.ai_task = asyncio.create_task(self.move_ai_paddle())
 
     async def game_loop(self):
         # Game loop logic here
