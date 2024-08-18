@@ -34,7 +34,7 @@ joinButton.addEventListener('click', async function() {
         if (data.paddle_positions) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
             paddle2.style.top = `${data.paddle_positions.player2}%`;
-            console.log("paddle1", paddle1.style.top, "paddle2", paddle2.style.top);
+            // console.log("paddle1", paddle1.style.top, "paddle2", paddle2.style.top);
         }
     
         if (data.score) {
@@ -64,37 +64,37 @@ function getPaddlePosition(key) {
     const paddleNumber = playerNumber.charAt(playerNumber.length - 1);
     const paddleId = 'paddle' + paddleNumber;
     const paddle = document.getElementById(paddleId);
-    console.log("paddle:", paddleId);
+    // console.log("paddle:", paddleId);
 
     // Log the heights in pixels for debugging
     const paddleHeightPx = parseFloat(window.getComputedStyle(paddle).height);
     const pongGameHeightPx = parseFloat(window.getComputedStyle(pongGame).height);
-    console.log("Paddle Height in px:", paddleHeightPx, "Game Height in px:", pongGameHeightPx);
+    // console.log("Paddle Height in px:", paddleHeightPx, "Game Height in px:", pongGameHeightPx);
 
     // Calculate the paddle's height as a percentage of its container
     const paddleHeightPercent = (paddleHeightPx / pongGameHeightPx) * 100;
-    console.log("Paddle Height Percentage:", paddleHeightPercent);
+    // console.log("Paddle Height Percentage:", paddleHeightPercent);
 
     // Current top position as a percentage
     const currentPercent = parseFloat(paddle.style.top.replace('%', '')) || 50;
-    console.log("Current Percent Position:", currentPercent);
+    // console.log("Current Percent Position:", currentPercent);
 
     // Determine the percentage step for each key press
     const stepPercent = (60 / pongGameHeightPx) * 100;  // Using a fixed step of 60 pixels converted to percentage
-    console.log("Step Percent for Movement:", stepPercent);
+    // console.log("Step Percent for Movement:", stepPercent);
 
     let newPercent = currentPercent;
     if (key === 'ArrowUp') {
         newPercent = Math.max(currentPercent - stepPercent, 0);  // Ensure the paddle doesn't go above the top edge
-        console.log("Adjusted Percent after ArrowUp:", newPercent);
+        // console.log("Adjusted Percent after ArrowUp:", newPercent);
     } else if (key === 'ArrowDown') {
         newPercent = Math.min(currentPercent + stepPercent, 100 - paddleHeightPercent);  // Adjust for paddle height
-        console.log("Adjusted Percent after ArrowDown:", newPercent);
+        // console.log("Adjusted Percent after ArrowDown:", newPercent);
     }
 
     // Update the DOM using percentages
     paddle.style.top = `${newPercent}%`;  
-    console.log("Updated Paddle Position:", newPercent);
+    // console.log("Updated Paddle Position:", newPercent);
 
     return newPercent;  // Send this to the server
 }
@@ -104,7 +104,7 @@ let isUpPressed = false;
 let isDownPressed = false;
 
 document.addEventListener('keydown', function(event) {
-    console.log("playerNumber", playerNumber);
+    // console.log("playerNumber", playerNumber);
     if (event.key === 'ArrowUp') {
         isUpPressed = true;
     } else if (event.key === 'ArrowDown') {
@@ -127,7 +127,7 @@ function updatePaddlePosition(timestamp) {
     if (timestamp - lastUpdateTime > updateInterval) {
         if (isUpPressed) {
             const newPosition = getPaddlePosition('ArrowUp');
-            console.log("newPosition up", newPosition);
+            // console.log("newPosition up", newPosition);
             gameSocket.send(JSON.stringify({
                 action: 'move_paddle',
                 position: newPosition,
@@ -136,7 +136,7 @@ function updatePaddlePosition(timestamp) {
         }
         if (isDownPressed) {
             const newPosition = getPaddlePosition('ArrowDown');
-            console.log("newPosition down", newPosition);
+            // console.log("newPosition down", newPosition);
             gameSocket.send(JSON.stringify({
                 action: 'move_paddle',
                 position: newPosition,

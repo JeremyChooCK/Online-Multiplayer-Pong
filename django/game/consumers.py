@@ -13,28 +13,28 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     player_mapping = {}
 
     async def connect(self):
-        await self.accept()
-        PongGameConsumer.player_count += 1
-        player_number = 'player1' if PongGameConsumer.player_count % 2 != 0 else 'player2'
-        self.player_mapping[self.channel_name] = player_number
+        if PongGameConsumer.player_count >= 2:
+            # Reject the connection attempt if two players are already connected
+            await self.close()
+        else:
+            # Accept the connection
+            await self.accept()
+            PongGameConsumer.player_count += 1
+            player_number = 'player1' if PongGameConsumer.player_count % 2 != 0 else 'player2'
+            self.player_mapping[self.channel_name] = player_number
 
-        await self.send(json.dumps({
-            'type': 'setup',
-            'player_number': player_number
-        }))
+            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+            await self.send(json.dumps({
+                'type': 'setup',
+                'player_number': player_number
+            }))
 
-        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
-        await self.send(json.dumps({
-            'type': 'setup',
-            'player_number': player_number
-        }))
-
-        if PongGameConsumer.player_count % 2 == 0:  # Start game when two players are connected
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {'type': 'notify', 'message': 'Game is starting!'}
-            )
-            await self.start_game()
+            if PongGameConsumer.player_count == 2:  # Start game when two players are connected
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {'type': 'notify', 'message': 'Game is starting!'}
+                )
+                await self.start_game()
 
     async def disconnect(self, close_code):
         player_number = self.player_mapping.get(self.channel_name)
@@ -59,7 +59,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
         new_position = max(min_position, min(position, max_position))
         self.paddle_positions[player_number] = new_position
-        print(f"Updated paddle positions: Player 1: {self.paddle_positions['player1']}, Player 2: {self.paddle_positions['player2']}")
+        # print(f"Updated paddle positions: Player 1: {self.paddle_positions['player1']}, Player 2: {self.paddle_positions['player2']}")
 
         await self.channel_layer.group_send(
             self.room_group_name,
