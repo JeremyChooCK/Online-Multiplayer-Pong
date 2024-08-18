@@ -18,6 +18,11 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         player_number = 'player1' if PongGameConsumer.player_count % 2 != 0 else 'player2'
         self.player_mapping[self.channel_name] = player_number
 
+        await self.send(json.dumps({
+            'type': 'setup',
+            'player_number': player_number
+        }))
+
         await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.send(json.dumps({
             'type': 'setup',
@@ -47,11 +52,15 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             await self.move_paddle(player_number, position)
 
     async def move_paddle(self, player_number, position):
-        # Paddle moving logic here
+        # Assuming the game field height is 100 units
+        paddle_height = 15  # Paddle height might need to be factored into position calculations
         min_position = 1
-        max_position = 85  # Adjusting for paddle height
+        max_position = 100 - paddle_height  # Ensure paddle stays within the game field
+
         new_position = max(min_position, min(position, max_position))
         self.paddle_positions[player_number] = new_position
+        print(f"Updated paddle positions: Player 1: {self.paddle_positions['player1']}, Player 2: {self.paddle_positions['player2']}")
+
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -59,6 +68,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                 'paddle_positions': self.paddle_positions
             }
         )
+
+
     
     async def send_paddle_position(self, event):
         paddle_position = event['paddle_positions']
