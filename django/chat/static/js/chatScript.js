@@ -2,8 +2,16 @@ document.addEventListener('DOMContentLoaded', function () {
     let currentUser = localStorage.getItem('username');
     let recipientId;
     const chatSections = {};  // Store chat sections for each user
-  
-    fetch('/chat/usernames/')
+    
+    const token = localStorage.getItem("accessToken");
+
+    fetch('/chat/usernames/', {            
+      method: "GET",
+      headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer " + token,
+      },
+    })
       .then(response => response.json())
       .then(usernames => {
         const usernamesDiv = document.getElementById('usernames');
