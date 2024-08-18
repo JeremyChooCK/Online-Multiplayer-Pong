@@ -64,7 +64,7 @@ function getPaddlePosition(key) {
     const paddleNumber = playerNumber.charAt(playerNumber.length - 1);
     const paddleId = 'paddle' + paddleNumber;
     const paddle = document.getElementById(paddleId);
-    console.log("paddle id:", paddlez);
+    console.log("paddle:", paddleId);
 
     // Log the heights in pixels for debugging
     const paddleHeightPx = parseFloat(window.getComputedStyle(paddle).height);
