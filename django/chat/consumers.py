@@ -24,6 +24,7 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
         else:
             message = text_data_json["message"]
             recipient_id = text_data_json["recipient_id"]
+            # check if user is muted
             await self.channel_layer.group_send( #triggers sendMessage method to everyone less the reciever (which is the sender itself)
                 recipient_id, {
                     "type": "sendMessage",

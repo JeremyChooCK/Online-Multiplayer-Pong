@@ -1,3 +1,11 @@
+// 1) create channel table. table will have channel name, owner, admin and user, ban list, mute list,
+// 2) create API to get channel details
+// 3) create API to post and change settings (back end check for rights)
+// 4) create a websocket to update all users of setting changes
+// 5) list channels in the chat page. joined and unjoined channels
+// 6) do front end 
+// 7) check jwt for all api calls 
+
 document.addEventListener('DOMContentLoaded', function () {
     let currentUser = localStorage.getItem('username');
     let recipientId;

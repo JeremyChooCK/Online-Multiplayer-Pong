@@ -188,7 +188,6 @@ class ChangeProfilePictureView(APIView):
             return Response({'error': 'UserProfile does not exist'}, status=404)
         except Exception as e:
             return Response({'error': str(e)}, status=500)
-
 class UserIdPairsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
