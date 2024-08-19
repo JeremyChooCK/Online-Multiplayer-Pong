@@ -22,6 +22,7 @@ joinButton.addEventListener('click', async function() {
         if (data.type === 'setup') {
             playerNumber = data.player_number;
             messageBox.innerText = `You are ${playerNumber}. Waiting for other player...`;
+            console.log(`Setup complete for ${playerNumber}`);
         } else if (data.type === 'game_starting') {
             messageBox.innerText = data.message;
         } else if (data.type === 'notify') {

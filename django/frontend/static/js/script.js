@@ -50,6 +50,7 @@ async function fetchUserData() {
         console.error('Fetch error:', error);
         if (error.message === "Unauthorized") {
             alert("Invalid credentials");
+            localStorage.removeItem("accessToken"); // Remove invalid token
             handleLoggedOutState();
         } else {
             alert("An error occurred while fetching the data");
