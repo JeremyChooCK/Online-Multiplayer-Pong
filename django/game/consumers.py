@@ -10,7 +10,7 @@ total_players = 0
 class PongGameConsumer(AsyncWebsocketConsumer):
     ball_position = {'x': 50, 'y': 50}
     ball_velocity = {'vx': 1, 'vy': 1}
-    speed_multiplier = 0.5  # Default speed multiplier
+    speed_multiplier = 1  # Default speed multiplier
     # score = {'player1': 0, 'player2': 0}
     paddle_positions = [{'player1': 50, 'player2': 50}, {'player1': 50, 'player2': 50}]
     room_group_name = None  # We'll assign this dynamically based on session
@@ -26,8 +26,11 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.accept()  # Accept all incoming connections
         global total_players
-        
-        # Add this connection to the queue
+        if total_players >= 4:
+            await self.send(json.dumps({'type': 'notify', 'message': 'Game is full. Please try again later.'}))
+            await self.close()
+            return
+
         waiting_players.append(self)
         total_players += 1
         print(f"Player added to queue. Total players: {total_players}")
@@ -140,7 +143,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def game_loop(self):
         # Game loop logic here
         while True:
-            self.update_ball_position()
+            await self.update_ball_position()
             await asyncio.sleep(0.016)  # 60 FPS
             await self.channel_layer.group_send(
                 self.room_group_name,
@@ -163,7 +166,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             'message': event['message']
         }))
 
-    def update_ball_position(self):
+    async def update_ball_position(self):
         # Calculate new potential positions
         new_x = self.ball_position['x'] + self.ball_velocity['vx'] * self.speed_multiplier
         new_y = self.ball_position['y'] + self.ball_velocity['vy'] * self.speed_multiplier
@@ -179,9 +182,9 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
         # Update y position after handling collisions
         self.ball_position['y'] = new_y
-        self.handle_collisions(new_x, new_y)
+        await self.handle_collisions(new_x, new_y)
 
-    def handle_collisions(self, new_x, new_y):
+    async def handle_collisions(self, new_x, new_y):
         # Handle paddle collisions
         if (new_x <= 10 and self.paddle_positions['player1'] <= new_y <= self.paddle_positions['player1'] + 15) or \
         (new_x >= 90 and self.paddle_positions['player2'] <= new_y <= self.paddle_positions['player2'] + 15):
@@ -190,10 +193,30 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         # Check for scoring
         if new_x <= 0:
             self.score['player2'] += 1
+            if self.score['player2'] >= 5:
+                await self.end_game(winner='player2')  # Correctly await the coroutine
+                return
             self.reset_ball()
         elif new_x >= 100:
             self.score['player1'] += 1
+            if self.score['player1'] >= 5:
+                await self.end_game(winner='player1')  # Correctly await the coroutine
+                return
             self.reset_ball()
+
+
+    async def end_game(self, winner):
+        # Send a game over message to the group
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'notify',
+                'message': f'Game over! {winner} wins!'
+            }
+        )
+        # Close the connection
+        await self.close()
+
 
     def reset_ball(self):
         # Reset ball position to center

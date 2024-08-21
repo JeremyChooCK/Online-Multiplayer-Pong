@@ -27,6 +27,7 @@ joinButton.addEventListener('click', async function() {
         } else if (data.type === 'game_starting') {
             messageBox.innerText = data.message;
         } else if (data.type === 'notify') {
+            console.log("notify", data.message);
             messageBox.innerText = data.message;
         } else if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
@@ -57,7 +58,7 @@ joinButton.addEventListener('click', async function() {
     
     gameSocket.onclose = function() {
         console.log('WebSocket closed unexpectedly.');
-        messageBox.innerText = "Disconnected. Please refresh to join again.";
+        // messageBox.innerText = "Disconnected. Please refresh to join again.";
     };
 });
 
