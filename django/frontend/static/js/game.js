@@ -19,10 +19,11 @@ joinButton.addEventListener('click', async function() {
 
     gameSocket.onmessage = function(event) {
         const data = JSON.parse(event.data);
+        // console.log("data", data);
         if (data.type === 'setup') {
             playerNumber = data.player_number;
             messageBox.innerText = `You are ${playerNumber}. Waiting for other player...`;
-            console.log(`Setup complete for ${playerNumber}`);
+            // console.log(`Setup complete for ${playerNumber}`);
         } else if (data.type === 'game_starting') {
             messageBox.innerText = data.message;
         } else if (data.type === 'notify') {
@@ -35,7 +36,7 @@ joinButton.addEventListener('click', async function() {
         if (data.paddle_positions) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
             paddle2.style.top = `${data.paddle_positions.player2}%`;
-            // console.log("paddle1", paddle1.style.top, "paddle2", paddle2.style.top);
+            console.log("paddle positions", data.type, data);
         }
     
         if (data.score) {
@@ -62,7 +63,8 @@ joinButton.addEventListener('click', async function() {
 
 function getPaddlePosition(key) {
     const pongGame = document.getElementById('pongGame');
-    const paddleNumber = playerNumber.charAt(playerNumber.length - 1);
+    paddleNumber = playerNumber.charAt(playerNumber.length - 1);
+    paddleNumber % 2 == 1 ? paddleNumber = '1' : paddleNumber = '2';
     const paddleId = 'paddle' + paddleNumber;
     const paddle = document.getElementById(paddleId);
     // console.log("paddle:", paddleId);

@@ -5,13 +5,14 @@ import random
 import uuid
 
 waiting_players = []
+total_players = 0
 
 class PongGameConsumer(AsyncWebsocketConsumer):
     ball_position = {'x': 50, 'y': 50}
     ball_velocity = {'vx': 1, 'vy': 1}
     speed_multiplier = 0.5  # Default speed multiplier
     # score = {'player1': 0, 'player2': 0}
-    paddle_positions = {'player1': 50, 'player2': 50}
+    paddle_positions = [{'player1': 50, 'player2': 50}, {'player1': 50, 'player2': 50}]
     room_group_name = None  # We'll assign this dynamically based on session
     
     def __init__(self, *args, **kwargs):
@@ -24,40 +25,64 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
         await self.accept()  # Accept all incoming connections
+        global total_players
         
         # Add this connection to the queue
         waiting_players.append(self)
-        print(f"Player added to queue. Total players: {len(waiting_players)}")
+        total_players += 1
+        print(f"Player added to queue. Total players: {total_players}")
+        
         await self.send(json.dumps({'type': 'setup', 'player_number': 'player' + str(len(waiting_players))}))
+        
         # Check if we have enough players to start a new game
-        if len(waiting_players) >= 2:
-            player1 = waiting_players.pop(0)
-            player2 = waiting_players.pop(0)
-            player1.player_number = 'player1'
-            player2.player_number = 'player2'
-            # Create a unique room name
-            game_id = str(uuid.uuid4())
-            room_group_name = f'pong_room_{game_id}'
-            player1.room_group_name = room_group_name
-            player2.room_group_name = room_group_name
-            print("2 players found. groupname: ", room_group_name)
-
-            # Add both players to the same group
-            await self.channel_layer.group_add(room_group_name, player1.channel_name)
-            await self.channel_layer.group_add(room_group_name, player2.channel_name)
-
-            # Send setup information to both players
-            # await player1.send(json.dumps({'type': 'setup', 'player_number': 'player1', 'room_group_name': room_group_name}))
-            # print("Sent setup to player 1")
-            # await player2.send(json.dumps({'type': 'setup', 'player_number': 'player2', 'room_group_name': room_group_name}))
-            # print("Sent setup to player 2")
-
-            # Notify players that the game is starting
+        if len(waiting_players) >= 4:  # Start the game when there are at least 4 players
+            # Dequeue four players
+            players = [waiting_players.pop(0) for _ in range(4)]
+            
+            # Assign player numbers and create a unique room name
+            game_id1 = str(uuid.uuid4())
+            room_group_name1 = f'pong_room_{game_id1}'
+            game_id2 = str(uuid.uuid4())
+            room_group_name2 = f'pong_room_{game_id2}'
+            
+            for i, player in enumerate(players):
+                
+                if i % 2 == 0:
+                    player.player_number = 'player1'
+                else:
+                    player.player_number = 'player2'
+                if i < 2:
+                    player.room_group_name = room_group_name1
+                    player.paddle_positions = self.paddle_positions[0]
+                else:
+                    player.paddle_positions = self.paddle_positions[1]
+                    player.room_group_name = room_group_name2
+                
+                # Add player to the group
+                await self.channel_layer.group_add(player.room_group_name, player.channel_name)
+                print(f"Sent setup to {player.player_number} in group {player.room_group_name}")
+                
+                # Send setup information to the player
+                await player.send(json.dumps({
+                    'type': 'setup', 
+                    'player_number': player.player_number, 
+                    'room_group_name': player.room_group_name
+                }))
+            
+            # Notify all players in the room that the game is starting
             await self.channel_layer.group_send(
-                room_group_name,
+                room_group_name1, 
                 {'type': 'notify', 'message': 'Game is starting!'}
             )
-            await self.start_game()
+            await self.channel_layer.group_send(
+                room_group_name2, 
+                {'type': 'notify', 'message': 'Game is starting!'}
+            )
+            
+            # Start the game
+            print("players", players)
+            await players[0].start_game()  # You can call start_game on any of the player instances
+            await players[2].start_game()
 
     async def disconnect(self, close_code):
         # Remove this player from the queue if they're still waiting
@@ -75,12 +100,12 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         action = data.get('action')
         if action == 'move_paddle' and self.room_group_name:
             position = float(data.get('position'))
-            print(f"Move paddle request from {self.player_number} with position {position}")
+            # print(f"Move paddle request from {self.player_number} with position {position}")
             await self.move_paddle(self.player_number, position)
 
 
     async def move_paddle(self, player_number, position):
-        print(f"Received move_paddle request from {player_number} with position {position}")
+        # print(f"Received move_paddle request from {player_number} with position {position}")
         # Assuming the game field height is 100 units
         paddle_height = 15  # Paddle height might need to be factored into position calculations
         min_position = 1
@@ -88,8 +113,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
         new_position = max(min_position, min(position, max_position))
         self.paddle_positions[player_number] = new_position
-        print(f"Updated paddle positions: Player 1: {self.paddle_positions['player1']}, Player 2: {self.paddle_positions['player2']}")
-
+        # print(f"Updated paddle positions: Player 1: {self.paddle_positions['player1']}, Player 2: {self.paddle_positions['player2']}")
+        print("Room group name", self.room_group_name)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -101,8 +126,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
     
     async def send_paddle_position(self, event):
-        print(f"Sending paddle position update: {event['paddle_positions']}")
-        print(self.room_group_name)
+        # print(f"Sending paddle position update: {event['paddle_positions']}")
+        # print(self.room_group_name)
         paddle_position = event['paddle_positions']
         await self.send(text_data=json.dumps({
             'paddle_positions': paddle_position,
