@@ -8,11 +8,20 @@ waiting_players = []
 
 class PongGameConsumer(AsyncWebsocketConsumer):
     ball_position = {'x': 50, 'y': 50}
-    ball_velocity = {'vx': 2, 'vy': 1}
-    score = {'player1': 0, 'player2': 0}
+    ball_velocity = {'vx': 1, 'vy': 1}
+    speed_multiplier = 0.5  # Default speed multiplier
+    # score = {'player1': 0, 'player2': 0}
     paddle_positions = {'player1': 50, 'player2': 50}
     room_group_name = None  # We'll assign this dynamically based on session
     
+    def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            # self.ball_position = {'x': 50, 'y': 50}
+            # self.ball_velocity = {'vx': 2, 'vy': 1}
+            self.score = {'player1': 0, 'player2': 0}
+            # self.paddle_positions = {'player1': 50, 'player2': 50}
+            # self.room_group_name = None  # Dynamically assigned based on session
+
     async def connect(self):
         await self.accept()  # Accept all incoming connections
         
@@ -131,8 +140,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
     def update_ball_position(self):
         # Calculate new potential positions
-        new_x = self.ball_position['x'] + self.ball_velocity['vx']
-        new_y = self.ball_position['y'] + self.ball_velocity['vy']
+        new_x = self.ball_position['x'] + self.ball_velocity['vx'] * self.speed_multiplier
+        new_y = self.ball_position['y'] + self.ball_velocity['vy'] * self.speed_multiplier
 
         # Now apply wrapping for x-coordinate
         self.ball_position['x'] = new_x % 100
@@ -162,9 +171,15 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             self.reset_ball()
 
     def reset_ball(self):
-        # Reset ball position to center and adjust direction
+        # Reset ball position to center
         self.ball_position = {'x': 50, 'y': 50}
-        self.ball_velocity = {'vx': random.choice([-2, 2]), 'vy': random.choice([-1, 1])}
+        # Apply the speed_multiplier to the reset velocities
+        base_velocity_x = random.choice([-2, 2])
+        base_velocity_y = random.choice([-1, 1])
+        self.ball_velocity = {
+            'vx': base_velocity_x * self.speed_multiplier,
+            'vy': base_velocity_y * self.speed_multiplier
+        }
 
 
     async def ball_movement(self, event):
