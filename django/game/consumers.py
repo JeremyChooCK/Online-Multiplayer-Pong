@@ -3,9 +3,13 @@ import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 import random
 import uuid
+from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.exceptions import TokenError
+from time import sleep
 
 waiting_players = []
 total_players = 0
+active_connections = {}
 
 class PongGameConsumer(AsyncWebsocketConsumer):
     ball_position = {'x': 50, 'y': 50}
@@ -14,6 +18,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     # score = {'player1': 0, 'player2': 0}
     paddle_positions = [{'player1': 50, 'player2': 50}, {'player1': 50, 'player2': 50}]
     room_group_name = None  # We'll assign this dynamically based on session
+    active_games = 0
     
     def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -24,16 +29,57 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             # self.room_group_name = None  # Dynamically assigned based on session
 
     async def connect(self):
-        await self.accept()  # Accept all incoming connections
+        await self.accept()  # Accept the WebSocket connection
         global total_players
+        print("Active connections", active_connections, "total players", total_players)
+        # Retrieve the token from query params or headers
+        token = self.scope['query_string'].decode().split('=')[1]  # Assuming token is passed as a query parameter
+        print(f"Token: {token}")
+        # Validate and decode the JWT
+        try:
+            access_token = AccessToken(token)
+            user_id = access_token['user_id']  # Assuming the payload has 'user_id'
+            print(f"User ID: {user_id}")
+        except TokenError as e:
+            await self.send(json.dumps({'error': 'Invalid token', 'details': str(e)}))
+            await self.close()
+            return
+
+        # Check if the user is already connected
+        if user_id in active_connections:
+            # await active_connections[user_id].close()  # Close the old connection
+            await self.send(json.dumps({'type': 'notify', 'message': 'You are already connected.'}))
+            await self.close()
+            print(f"Closed old connection for user {user_id}")
+            return
+
+        # Register new connection
+        active_connections[user_id] = self
+        print(f"New connection registered for user {user_id}")
+
+        # Add to game queue or perform other actions
         if total_players >= 4:
             await self.send(json.dumps({'type': 'notify', 'message': 'Game is full. Please try again later.'}))
+            if user_id in active_connections:
+                del active_connections[user_id]
+            await self.close()
+            return
+
+        # TODO check if the player is already in the queue
+        # print("Player connected", self, "waiting players", waiting_players)
+        print("Player connected", self)
+        
+        if self in waiting_players:
+            print("Player already in queue")
+            await self.send(json.dumps({'type': 'notify', 'message': 'You are already in the queue.'}))
             await self.close()
             return
 
         waiting_players.append(self)
+        # print("waiting players", waiting_players)
         total_players += 1
         print(f"Player added to queue. Total players: {total_players}")
+        # print(f"Player added to queue. Total players: {total_players}")
         
         await self.send(json.dumps({'type': 'setup', 'player_number': 'player' + str(len(waiting_players))}))
         
@@ -91,11 +137,11 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         # Remove this player from the queue if they're still waiting
         if self in waiting_players:
             waiting_players.remove(self)
-        
         # Discard from group if already in a game
         if self.room_group_name:
+            # sleep(1)  # Wait for a second before discarding the player from the group
             await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
-            PongGameConsumer.player_count -= 1
+
 
 
     async def receive(self, text_data):
@@ -117,7 +163,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         new_position = max(min_position, min(position, max_position))
         self.paddle_positions[player_number] = new_position
         # print(f"Updated paddle positions: Player 1: {self.paddle_positions['player1']}, Player 2: {self.paddle_positions['player2']}")
-        print("Room group name", self.room_group_name)
+        # print("Room group name", self.room_group_name)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -137,8 +183,36 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         }))
 
     async def start_game(self):
-        # Game starting logic here
+        # Increment the counter when a game starts
+        PongGameConsumer.active_games += 1
         self.game_loop_task = asyncio.create_task(self.game_loop())
+
+    async def end_game(self, winner):
+        # Send a game over message to the group
+        await self.channel_layer.group_send(
+            self.room_group_name,
+            {
+                'type': 'notify',
+                'message': f'Game over! {winner} wins!'
+            }
+        )
+        # Close the connection
+        sleep(1)  # Wait for a second before closing the connection
+        await self.close()
+
+        # Decrement the counter when a game ends
+        PongGameConsumer.active_games -= 1
+        print("total players", total_players)
+        # Check if it's the last game to end
+        if PongGameConsumer.active_games == 0:
+            await self.cleanup_connections()
+
+    async def cleanup_connections(self):
+        # Clear all active connections
+        global total_players
+        active_connections.clear()
+        total_players = 0
+        print("Cleared all active connections after the last game ended.", active_connections, total_players)
 
     async def game_loop(self):
         # Game loop logic here
@@ -203,20 +277,6 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                 await self.end_game(winner='player1')  # Correctly await the coroutine
                 return
             self.reset_ball()
-
-
-    async def end_game(self, winner):
-        # Send a game over message to the group
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'notify',
-                'message': f'Game over! {winner} wins!'
-            }
-        )
-        # Close the connection
-        await self.close()
-
 
     def reset_ball(self):
         # Reset ball position to center

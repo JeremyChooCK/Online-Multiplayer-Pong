@@ -11,56 +11,57 @@ let gameSocket;
 let playerNumber = null;
 
 joinButton.addEventListener('click', async function() {
-    gameSocket = new WebSocket('wss://localhost/ws/game/');
+    const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
+    // if (!token) {
+    //     messageBox.innerText = "You are not logged in.";
+    //     return;
+    // }
+
+    // Include the token as a URL parameter
+    gameSocket = new WebSocket(`wss://localhost/ws/game/?token=${encodeURIComponent(token)}`);
 
     gameSocket.onopen = function() {
-        messageBox.innerText = "Connected. Waiting for another player...";
+        console.log("WebSocket connection established.");
     };
 
     gameSocket.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        // console.log("data", data);
+        console.log("Received data:", data.type, data);
+
+        // Handle different message types here...
         if (data.type === 'setup') {
             playerNumber = data.player_number;
-            messageBox.innerText = `You are ${playerNumber}. Waiting for other player...`;
-            // console.log(`Setup complete for ${playerNumber}`);
+            messageBox.innerText = `You are ${playerNumber}. Waiting for other players...`;
         } else if (data.type === 'game_starting') {
             messageBox.innerText = data.message;
         } else if (data.type === 'notify') {
-            console.log("notify", data.message);
+            console.log("Notify:", data.message);
             messageBox.innerText = data.message;
         } else if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
             ball.style.top = `${data.ball_position.y}%`;
-        }
-    
-        if (data.paddle_positions) {
+        } else if (data.paddle_positions) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
             paddle2.style.top = `${data.paddle_positions.player2}%`;
-            console.log("paddle positions", data.type, data);
-        }
-    
-        if (data.score) {
+        } else if (data.score) {
             player1Score.textContent = data.score.player1;
             player2Score.textContent = data.score.player2;
-        }
-    
-        if (data.type === 'game_over') {
+        } else if (data.type === 'game_over') {
             alert(data.message);
             gameSocket.close();
         }
     };
-    
+
     gameSocket.onerror = function(error) {
         console.error('WebSocket error:', error);
         messageBox.innerText = "Connection error. Please refresh to try again.";
     };
-    
+
     gameSocket.onclose = function() {
         console.log('WebSocket closed unexpectedly.');
-        // messageBox.innerText = "Disconnected. Please refresh to join again.";
     };
 });
+
 
 function getPaddlePosition(key) {
     const pongGame = document.getElementById('pongGame');
