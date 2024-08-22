@@ -57,9 +57,9 @@ joinButton.addEventListener('click', async function() {
         messageBox.innerText = "Connection error. Please refresh to try again.";
     };
 
-    gameSocket.onclose = function() {
-        console.log('WebSocket closed unexpectedly.');
-    };
+    // gameSocket.onclose = function() {
+    //     console.log('WebSocket closed unexpectedly.');
+    // };
 });
 
 

@@ -39,7 +39,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         try:
             access_token = AccessToken(token)
             user_id = access_token['user_id']  # Assuming the payload has 'user_id'
-            print(f"User ID: {user_id}")
+            self.user_id = user_id
+            # print(f"User ID: {user_id}")
         except TokenError as e:
             await self.send(json.dumps({'error': 'Invalid token', 'details': str(e)}))
             await self.close()
@@ -62,16 +63,6 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             await self.send(json.dumps({'type': 'notify', 'message': 'Game is full. Please try again later.'}))
             if user_id in active_connections:
                 del active_connections[user_id]
-            await self.close()
-            return
-
-        # TODO check if the player is already in the queue
-        # print("Player connected", self, "waiting players", waiting_players)
-        print("Player connected", self)
-        
-        if self in waiting_players:
-            print("Player already in queue")
-            await self.send(json.dumps({'type': 'notify', 'message': 'You are already in the queue.'}))
             await self.close()
             return
 
@@ -117,6 +108,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                     'player_number': player.player_number, 
                     'room_group_name': player.room_group_name
                 }))
+            # for player in players:
+            #     print("user id", player.user_id, "player", player.player_number, "room", player.room_group_name)
             
             # Notify all players in the room that the game is starting
             await self.channel_layer.group_send(
@@ -189,6 +182,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
     async def end_game(self, winner):
         # Send a game over message to the group
+        # print("sending game over message", self.room_group_name, "winner", winner)
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -196,8 +190,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
                 'message': f'Game over! {winner} wins!'
             }
         )
+        await asyncio.sleep(1)
         # Close the connection
-        sleep(1)  # Wait for a second before closing the connection
         await self.close()
 
         # Decrement the counter when a game ends
