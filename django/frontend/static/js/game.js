@@ -37,18 +37,18 @@ joinButton.addEventListener('click', async function() {
         } else if (data.type === 'notify') {
             console.log("Notify:", data.message);
             messageBox.innerText = data.message;
-        } else if (data.ball_position) {
-            ball.style.left = `${data.ball_position.x}%`;
-            ball.style.top = `${data.ball_position.y}%`;
-        } else if (data.paddle_positions) {
-            paddle1.style.top = `${data.paddle_positions.player1}%`;
-            paddle2.style.top = `${data.paddle_positions.player2}%`;
-        } else if (data.score) {
-            player1Score.textContent = data.score.player1;
-            player2Score.textContent = data.score.player2;
         } else if (data.type === 'game_over') {
             alert(data.message);
             gameSocket.close();
+        } if (data.ball_position) {
+            ball.style.left = `${data.ball_position.x}%`;
+            ball.style.top = `${data.ball_position.y}%`;
+        } if (data.paddle_positions) {
+            paddle1.style.top = `${data.paddle_positions.player1}%`;
+            paddle2.style.top = `${data.paddle_positions.player2}%`;
+        } if (data.score) {
+            player1Score.textContent = data.score.player1;
+            player2Score.textContent = data.score.player2;
         }
     };
 
