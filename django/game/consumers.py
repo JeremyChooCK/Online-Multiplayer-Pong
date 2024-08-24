@@ -12,18 +12,19 @@ total_players = 0
 active_connections = {}
 
 class PongGameConsumer(AsyncWebsocketConsumer):
-    ball_position = {'x': 50, 'y': 50}
-    ball_velocity = {'vx': 1, 'vy': 1}
+    # ball_position = {'x': 50, 'y': 50}
+    # ball_velocity = {'vx': 1, 'vy': 1}
     speed_multiplier = 1  # Default speed multiplier
     # score = {'player1': 0, 'player2': 0}
     paddle_positions = [{'player1': 50, 'player2': 50}, {'player1': 50, 'player2': 50}]
     room_group_name = None  # We'll assign this dynamically based on session
     active_games = 0
+    winners_waiting = [] # Store winners waiting for the next game
     
     def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
-            # self.ball_position = {'x': 50, 'y': 50}
-            # self.ball_velocity = {'vx': 2, 'vy': 1}
+            self.ball_position = {'x': 50, 'y': 50}
+            self.ball_velocity = {'vx': 1, 'vy': 1}
             self.score = {'player1': 0, 'player2': 0}
             # self.paddle_positions = {'player1': 50, 'player2': 50}
             # self.room_group_name = None  # Dynamically assigned based on session
@@ -124,7 +125,9 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             # Start the game
             print("players", players)
             await players[0].start_game()  # You can call start_game on any of the player instances
+            # await players[1].start_game()
             await players[2].start_game()
+            # await players[3].start_game()
 
     async def disconnect(self, close_code):
         # Remove this player from the queue if they're still waiting
@@ -181,25 +184,70 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         self.game_loop_task = asyncio.create_task(self.game_loop())
 
     async def end_game(self, winner):
-        # Send a game over message to the group
-        # print("sending game over message", self.room_group_name, "winner", winner)
+        print("Starting end_game method", self, winner, self.player_number, winner.player_number)
+        # Notify everyone in the room about the game over
         await self.channel_layer.group_send(
             self.room_group_name,
             {
                 'type': 'notify',
-                'message': f'Game over! {winner} wins!'
+                'message': f'Game over! {winner.player_number} wins!'
             }
         )
-        await asyncio.sleep(1)
-        # Close the connection
-        await self.close()
+        print("Notification sent")
+        
+        await asyncio.sleep(1)  # Short delay before closing or reassigning players
+        print("Sleep over")
+        PongGameConsumer.winners_waiting.append(winner)
+        print("Winner added to waiting list", PongGameConsumer.winners_waiting)
 
-        # Decrement the counter when a game ends
+        if self.player_number == winner.player_number:
+            for player in active_connections.values():
+                if player.room_group_name == self.room_group_name and player.player_number != winner.player_number:
+                    await player.close()
+        else:
+            active_connections.pop(self.user_id)
+            await self.close()
+
         PongGameConsumer.active_games -= 1
-        print("total players", total_players)
-        # Check if it's the last game to end
-        if PongGameConsumer.active_games == 0:
+        print("Active games", PongGameConsumer.active_games)
+        print("Winners waiting", PongGameConsumer.winners_waiting)
+        if len(PongGameConsumer.winners_waiting) >= 2:
+            print("Starting new game with winners")
+            await winner.start_new_game_with_winners()
+
+        if PongGameConsumer.active_games <= 0:
             await self.cleanup_connections()
+
+
+    async def start_new_game_with_winners(self):
+        # Select winners for the next game
+        print("NEWW winners", PongGameConsumer.winners_waiting)
+        winner1 = PongGameConsumer.winners_waiting.pop(0)
+        winner2 = PongGameConsumer.winners_waiting.pop(0)
+        
+        # Create a new room for these winners
+        new_room_name = f'championship_room_{uuid.uuid4()}'
+        print("New room name:", new_room_name)
+        # Assign them to a new room group and start a new game
+        winner1.room_group_name = new_room_name
+        winner2.room_group_name = new_room_name
+        print("Winners before:", winner1.player_number, winner2.player_number)
+        winner1.player_number = 'player1'
+        winner2.player_number = 'player2'
+        print("Winners after:", winner1.player_number, winner2.player_number)
+        winner1.score = {'player1': 0, 'player2': 0}
+        winner2.score = {'player1': 0, 'player2': 0}
+        print("Scores reset for the new game", winner1.score, winner2.score)
+        # Add them to the new group
+        await self.channel_layer.group_add(new_room_name, winner1.channel_name)
+        await self.channel_layer.group_add(new_room_name, winner2.channel_name)
+        print("Added winners to the new room group", new_room_name)
+        await winner1.send(json.dumps({'type': 'notify', 'message': 'championship game starting!'}))
+        await winner2.send(json.dumps({'type': 'notify', 'message': 'championship game starting!'}))
+        # Start the game for the new room
+        print("Starting new game with winners:", winner1.player_number, winner2.player_number)
+        await winner1.start_game()
+        # await winner2.start_game()
 
     async def cleanup_connections(self):
         # Clear all active connections
@@ -211,8 +259,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def game_loop(self):
         # Game loop logic here
         while True:
-            await self.update_ball_position()
             await asyncio.sleep(0.016)  # 60 FPS
+            await self.update_ball_position()
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {
@@ -262,13 +310,19 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         if new_x <= 0:
             self.score['player2'] += 1
             if self.score['player2'] >= 5:
-                await self.end_game(winner='player2')  # Correctly await the coroutine
+                for player in active_connections.values():
+                    if player.room_group_name == self.room_group_name and player.player_number == 'player2':
+                        winner = player
+                        await self.end_game(winner)
                 return
             self.reset_ball()
         elif new_x >= 100:
             self.score['player1'] += 1
             if self.score['player1'] >= 5:
-                await self.end_game(winner='player1')  # Correctly await the coroutine
+                for player in active_connections.values():
+                    if player.room_group_name == self.room_group_name and player.player_number == 'player1':
+                        winner = player
+                        await self.end_game(winner)
                 return
             self.reset_ball()
 
@@ -285,10 +339,18 @@ class PongGameConsumer(AsyncWebsocketConsumer):
 
 
     async def ball_movement(self, event):
-        ball_position = event['ball_position']
-        score = event['score']
-        await self.send(text_data=json.dumps({
-            'ball_position': ball_position,
-            'score': score,
-            'paddle_positions': self.paddle_positions
-        }))
+        # self.all_position = event['ball_position']
+        # print(self.room_group_name, self.ball_position, event['ball_position'])
+        for player in active_connections.values():
+            if player.room_group_name == self.room_group_name:    
+                await player.send(text_data=json.dumps({
+                    'ball_position': event['ball_position'],
+                    'score': event['score'],
+                    'paddle_positions': event['paddle_positions']
+                }))
+        # score = event['score']
+        # await self.send(text_data=json.dumps({
+        #     'ball_position': self.ball_position,
+        #     'score': score,
+        #     'paddle_positions': self.paddle_positions
+        # }))

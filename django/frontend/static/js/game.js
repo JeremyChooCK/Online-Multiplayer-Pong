@@ -43,6 +43,7 @@ joinButton.addEventListener('click', async function() {
         } if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
             ball.style.top = `${data.ball_position.y}%`;
+            // console.log("room_groupname", data.room_group_name);
         } if (data.paddle_positions) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
             paddle2.style.top = `${data.paddle_positions.player2}%`;
