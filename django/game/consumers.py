@@ -64,7 +64,7 @@ class GameRoom:
         if (self.ball_position['x'] <= 10 and self.paddle_positions['player1'] <= self.ball_position['y'] <= self.paddle_positions['player1'] + 15) or \
         (self.ball_position['x'] >= 90 and self.paddle_positions['player2'] <= self.ball_position['y'] <= self.paddle_positions['player2'] + 15):
             self.ball_velocity['vx'] *= -1
-
+        print(self, "ball velocity",self.ball_velocity)
         # Scoring logic
         if self.ball_position['x'] <= 0:
             self.score['player2'] += 1
@@ -75,19 +75,30 @@ class GameRoom:
             self.check_score('player1')
             self.reset_ball()
 
-    async def end_game(self, winner):
-        end_message = {'type': 'game_over', 'message': f'{winner} wins!'}
+    async def end_game(self, winner_identifier):
+        # Find the player object that matches the winner identifier
+        winner = next((player for player in self.players if player.player_number == winner_identifier), None)
+        if winner is None:
+            print("Error: Winner not found in the game room.")
+            return
+        
+        print(f'Game over! {winner_identifier} wins!')
+        end_message = {'type': 'game_over', 'message': f'{winner_identifier} wins!'}
         for player in self.players:
             await player.send(json.dumps(end_message))
-            await player.send(json.dumps({'type': 'notify', 'message': f'{winner} wins!'}))
+
         self.game_active = False
-        # Optionally reset the game or prepare for a new game
+
+        # Notify RoomManager if this room was part of a tournament
+        if self in room_manager.tournament_rooms:
+            await room_manager.handle_semi_final_end(self, winner)
+        elif self == room_manager.final_room:
+            await room_manager.handle_final_end(winner)
 
     def check_score(self, player):
         if self.score[player] >= 5:  # Assuming 5 points needed to win
             asyncio.create_task(self.end_game(player))
             self.reset_ball()
-
 
     async def broadcast_game_state(self):
         state = json.dumps({
@@ -134,6 +145,8 @@ class RoomManager:
         self.rooms = {}
         self.waiting_players_one_on_one = []
         self.waiting_players_tournament = []
+        self.tournament_rooms = []
+        self.final_room = None
 
     async def queue_player(self, player, game_mode):
         if game_mode == 'one_on_one':
@@ -145,25 +158,49 @@ class RoomManager:
                 self.waiting_players_one_on_one.append(player)
                 await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for an opponent...'}))
         elif game_mode == 'tournament':
-            # Handle tournament logic
             self.waiting_players_tournament.append(player)
-            await player.send(json.dumps({'type': 'notify', 'message': f'You are in the tournament queue. {len(self.waiting_players_tournament)}/4 players in queue.'}))
-            if len(self.waiting_players_tournament) == 4:  # or another condition
-                room1 = self.create_room()
-                room2 = self.create_room()
-                champions_room = self.create_room()
-                for i in range(4):
-                    player = self.waiting_players_tournament.pop(0)
-                    if i < 2:
-                        await room1.add_player(player)
-                    else:
-                        await room2.add_player(player)
-
+            for player in self.waiting_players_tournament:
+                await player.send(json.dumps({'type': 'notify', 'message': f'Waiting for {4 - len(self.waiting_players_tournament)} more players...'}))
+            if len(self.waiting_players_tournament) == 4:  # Start tournament when 4 players are ready
+                # Create two rooms for semi-finals
+                print('Tournament started!')
+                semi_final_1 = self.create_room()
+                semi_final_2 = self.create_room()
+                self.tournament_rooms.append(semi_final_1)
+                self.tournament_rooms.append(semi_final_2)
+                
+                # Add players to semi-final rooms
+                await semi_final_1.add_player(self.waiting_players_tournament.pop(0))
+                await semi_final_1.add_player(self.waiting_players_tournament.pop(0))
+                await semi_final_2.add_player(self.waiting_players_tournament.pop(0))
+                await semi_final_2.add_player(self.waiting_players_tournament.pop(0))
 
     def create_room(self):
         room = GameRoom()
         self.rooms[room.room_id] = room
         return room
+    
+    async def handle_semi_final_end(self, room, winner):
+        if not self.final_room:
+            self.final_room = self.create_room()  # This should reset everything
+        await self.final_room.add_player(winner)
+        
+        # Check and reset game state as needed
+        if len(self.final_room.players) == 2:
+            self.final_room.reset_game_state()  # Reset game state before starting
+            await self.final_room.start_game()
+
+    async def handle_final_end(self, winner):
+        print(f"Tournament concluded. Winner: {winner}")
+        # Reset tournament rooms for next round
+        self.final_room = None
+        self.tournament_rooms = []
+
+    def reset_game_state(self):
+        self.ball_position = {'x': 50, 'y': 50}
+        self.ball_velocity = {'vx': 1, 'vy': 1}
+        self.score = {'player1': 0, 'player2': 0}
+        self.paddle_positions = {'player1': 50, 'player2': 50}
 
 room_manager = RoomManager()
 
