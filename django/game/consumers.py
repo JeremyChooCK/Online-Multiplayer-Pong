@@ -5,6 +5,7 @@ import random
 import uuid
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
+from urllib.parse import parse_qs
 
 class GameRoom:
     def __init__(self):
@@ -75,9 +76,10 @@ class GameRoom:
             self.reset_ball()
 
     async def end_game(self, winner):
-        end_message = {'type': 'end_game', 'message': f'{winner} wins!'}
+        end_message = {'type': 'game_over', 'message': f'{winner} wins!'}
         for player in self.players:
             await player.send(json.dumps(end_message))
+            await player.send(json.dumps({'type': 'notify', 'message': f'{winner} wins!'}))
         self.game_active = False
         # Optionally reset the game or prepare for a new game
 
@@ -130,19 +132,33 @@ class GameRoom:
 class RoomManager:
     def __init__(self):
         self.rooms = {}
-        self.waiting_players = []
+        self.waiting_players_one_on_one = []
+        self.waiting_players_tournament = []
 
-    async def queue_player(self, player):
-        print(f'Player {player.user_id} queued')
-        if self.waiting_players:
-            room = self.create_room()
-            print(f'Creating room {room.room_id}')
-            await room.add_player(player)
-            await room.add_player(self.waiting_players.pop(0))
-            print(f'Room {room.room_id} is full')
-        else:
-            self.waiting_players.append(player)
-            await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for an opponent...'}))
+    async def queue_player(self, player, game_mode):
+        if game_mode == 'one_on_one':
+            if self.waiting_players_one_on_one:
+                room = self.create_room()
+                await room.add_player(player)
+                await room.add_player(self.waiting_players_one_on_one.pop(0))
+            else:
+                self.waiting_players_one_on_one.append(player)
+                await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for an opponent...'}))
+        elif game_mode == 'tournament':
+            # Handle tournament logic
+            self.waiting_players_tournament.append(player)
+            await player.send(json.dumps({'type': 'notify', 'message': f'You are in the tournament queue. {len(self.waiting_players_tournament)}/4 players in queue.'}))
+            if len(self.waiting_players_tournament) == 4:  # or another condition
+                room1 = self.create_room()
+                room2 = self.create_room()
+                champions_room = self.create_room()
+                for i in range(4):
+                    player = self.waiting_players_tournament.pop(0)
+                    if i < 2:
+                        await room1.add_player(player)
+                    else:
+                        await room2.add_player(player)
+
 
     def create_room(self):
         room = GameRoom()
@@ -155,19 +171,36 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         await self.accept()
         
-        # Retrieve the token from query params
-        token = self.scope['query_string'].decode().split('=')[1]
+        # Extract query parameters
+        query_string = self.scope['query_string'].decode('utf-8')
+        params = parse_qs(query_string)
+        token = params.get('token', [None])[0]
+        mode = params.get('mode', [None])[0]
+        print(f'mode: {mode}')
         try:
             access_token = AccessToken(token)
-            self.user_id = access_token['user_id']  # Extract user_id assuming it's stored in the token
+            self.user_id = access_token['user_id']
         except TokenError as e:
             await self.send(json.dumps({'error': 'Invalid token', 'details': str(e)}))
             await self.close()
             return
-        
-        # Add this user to the queue
-        print(f'User {self.user_id} connected')
-        await room_manager.queue_player(self)
+
+        # Process different game modes
+        if mode == 'tournament':
+            await self.handle_tournament_mode(self.user_id)
+        elif mode == 'one_on_one':
+            await self.handle_one_on_one_mode(self.user_id)
+        else:
+            await self.send(json.dumps({'error': 'Invalid game mode'}))
+            await self.close()
+
+    async def handle_tournament_mode(self, user_id):
+        # Logic to handle tournament mode
+        await room_manager.queue_player(self, game_mode='tournament')
+
+    async def handle_one_on_one_mode(self, user_id):
+        # Logic to handle one on one mode
+        await room_manager.queue_player(self, game_mode='one_on_one')
 
     async def disconnect(self, close_code):
         if hasattr(self, 'game_room'):

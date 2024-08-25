@@ -6,19 +6,35 @@ const player1Score = document.getElementById('player1Score');
 const player2Score = document.getElementById('player2Score');
 const startButton = document.getElementById('startButton');
 const joinButton = document.getElementById('joinButton');
+const oneOnOneButton = document.getElementById('oneOnOneButton');
 const messageBox = document.getElementById('messageBox');
 let gameSocket;
 let playerNumber = null;
 
 joinButton.addEventListener('click', async function() {
     const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
-    // if (!token) {
-    //     messageBox.innerText = "You are not logged in.";
-    //     return;
-    // }
+    if (!token) {
+        messageBox.innerText = "You are not logged in.";
+        return;
+    }
+    let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=tournament`;
+    startGame(url);
+});
 
-    // Include the token as a URL parameter
-    gameSocket = new WebSocket(`wss://localhost/ws/game/?token=${encodeURIComponent(token)}`);
+oneOnOneButton.addEventListener('click', async function() {
+    const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
+    if (!token) {
+        messageBox.innerText = "You are not logged in.";
+        return;
+    }
+    let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one`;
+    startGame(url);
+});
+
+function startGame(url) {
+
+    console.log("WebSocket URL:", url);
+    gameSocket = new WebSocket(url);
 
     gameSocket.onopen = function() {
         console.log("WebSocket connection established.");
@@ -31,15 +47,13 @@ joinButton.addEventListener('click', async function() {
         // Handle different message types here...
         if (data.type === 'setup') {
             playerNumber = data.player_number;
-            messageBox.innerText = `You are ${playerNumber}. Waiting for other players...`;
         } else if (data.type === 'game_starting') {
             messageBox.innerText = data.message;
         } else if (data.type === 'notify') {
             console.log("Notify:", data.message);
             messageBox.innerText = data.message;
         } else if (data.type === 'game_over') {
-            alert(data.message);
-            gameSocket.close();
+            messageBox.innerText = data.message;
         } if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
             ball.style.top = `${data.ball_position.y}%`;
@@ -61,7 +75,7 @@ joinButton.addEventListener('click', async function() {
     // gameSocket.onclose = function() {
     //     console.log('WebSocket closed unexpectedly.');
     // };
-});
+}
 
 
 function getPaddlePosition(key) {
