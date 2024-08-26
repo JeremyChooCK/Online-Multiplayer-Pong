@@ -6,6 +6,8 @@ import uuid
 from rest_framework_simplejwt.tokens import AccessToken
 from rest_framework_simplejwt.exceptions import TokenError
 from urllib.parse import parse_qs
+from django.contrib.auth.models import User
+from channels.db import database_sync_to_async
 
 class GameRoom:
     def __init__(self):
@@ -21,8 +23,18 @@ class GameRoom:
         if len(self.players) < 2:
             self.players.append(player)
             player.game_room = self
+
+            # Fetch user asynchronously
+            player.user = await database_sync_to_async(User.objects.get)(id=player.user_id)
+            print(f'User {player.user.username} joined the game room {self.room_id}')
+
+            if not player.user.is_authenticated:
+                await player.send(json.dumps({'error': 'Unauthorized'}))
+                return
+
             player.player_number = 'player1' if len(self.players) == 1 else 'player2'
             await player.send(json.dumps({'type': 'setup', 'player_number': player.player_number}))
+
             if len(self.players) == 2:
                 await self.start_game()
 
@@ -90,7 +102,8 @@ class GameRoom:
             return
         
         print(f'Game over! {winner_identifier} wins!')
-        end_message = {'type': 'game_over', 'message': f'{winner_identifier} wins!'}
+        # end_message = {'type': 'game_over', 'message': f'{self.players[int(winner_identifier[-1])].user.username} wins!'}
+        end_message = {'type': 'game_over', 'message': f'{winner_identifier} wins!'}        
         for player in self.players:
             await player.send(json.dumps(end_message))
 
@@ -101,6 +114,8 @@ class GameRoom:
             await room_manager.handle_semi_final_end(self, winner)
         elif self == room_manager.final_room:
             await room_manager.handle_final_end(winner)
+        elif self == room_manager.third_place_room:
+            await room_manager.handle_third_place_end(winner)
 
     def check_score(self, player):
         if self.score[player] >= 5:  # Assuming 5 points needed to win
@@ -154,6 +169,8 @@ class RoomManager:
         self.waiting_players_tournament = []
         self.tournament_rooms = []
         self.final_room = None
+        self.third_place_room = None  # Room for third place match
+        self.semi_final_losers = []  # List to keep track of the losers of the semi-finals
 
     async def queue_player(self, player, game_mode):
         if game_mode == 'one_on_one':
@@ -188,20 +205,67 @@ class RoomManager:
         return room
     
     async def handle_semi_final_end(self, room, winner):
+        # Identify the loser in the semi-final room
+        loser = next((player for player in room.players if player != winner), None)
+        self.semi_final_losers.append(loser)
+
+        # Prepare the final room if not already done
         if not self.final_room:
-            self.final_room = self.create_room()  # This should reset everything
+            self.final_room = self.create_room()
+
+        # Add the winner to the final room
         await self.final_room.add_player(winner)
-        
-        # Check and reset game state as needed
-        if len(self.final_room.players) == 2:
-            self.final_room.reset_game_state()  # Reset game state before starting
-            await self.final_room.start_game()
+
+        # If two winners are ready, start the final game
+        # if len(self.final_room.players) == 2:
+        #     await self.final_room.start_game()
+
+        # Prepare the third place match room
+        if len(self.semi_final_losers) == 2:
+            if not self.third_place_room:
+                self.third_place_room = self.create_room()
+            third_place_player1 = self.semi_final_losers.pop(0)
+            third_place_player2 = self.semi_final_losers.pop(0)
+            third_place_msg = {'type': 'notify', 'message': 'You are now in the third-place match!'}
+            await third_place_player1.send(json.dumps(third_place_msg))
+            await third_place_player2.send(json.dumps(third_place_msg))
+            await self.third_place_room.add_player(third_place_player1)
+            await self.third_place_room.add_player(third_place_player2)
+            # await self.third_place_room.start_game()
+            # Notify players about the third-place match
+
 
     async def handle_final_end(self, winner):
-        print(f"Tournament concluded. Winner: {winner}")
-        # Reset tournament rooms for next round
+    # Find the loser in the final room
+        loser = next((player for player in self.final_room.players if player != winner), None)
+
+        # Send messages to both players
+        if winner:
+            winner_msg = {'type': 'notify', 'message': 'Congratulations! You won the tournament!'}
+            await winner.send(json.dumps(winner_msg))
+        if loser:
+            loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 2nd in the tournament!'}
+            await loser.send(json.dumps(loser_msg))
+
+        print(f"Tournament concluded. Winner: {winner.user.username}")
         self.final_room = None
         self.tournament_rooms = []
+
+    async def handle_third_place_end(self, winner):
+        # Find the loser in the third place room
+        loser = next((player for player in self.third_place_room.players if player != winner), None)
+
+        # Send messages to both players
+        if winner:
+            winner_msg = {'type': 'notify', 'message': 'Congratulations! You finished 3rd in the tournament!'}
+            await winner.send(json.dumps(winner_msg))
+        if loser:
+            loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 4th in the tournament!'}
+            await loser.send(json.dumps(loser_msg))
+
+        print(f"Tournament concluded. Third place: {winner.user.username}")
+        self.third_place_room = None
+        self.semi_final_losers = []
 
     def reset_game_state(self):
         self.ball_position = {'x': 50, 'y': 50}
