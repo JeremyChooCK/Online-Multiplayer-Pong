@@ -27,10 +27,18 @@ class GameRoom:
                 await self.start_game()
 
     async def start_game(self):
+        # Send a countdown before the game starts
+        for i in range(3, 0, -1):
+            countdown_message = {'type': 'notify', 'message': f'Game starts in {i}...'}
+            print(countdown_message)
+            for player in self.players:
+                await player.send(json.dumps(countdown_message))
+            await asyncio.sleep(1)  # Wait for 1 second between countdown messages
+
         self.game_active = True
         start_message = {'type': 'notify', 'message': 'Game is starting!'}
         for player in self.players:
-            await player.send(json.dumps(start_message))  # Correctly formatted send
+            await player.send(json.dumps(start_message))
         asyncio.create_task(self.game_loop())
 
     async def game_loop(self):
@@ -64,7 +72,6 @@ class GameRoom:
         if (self.ball_position['x'] <= 10 and self.paddle_positions['player1'] <= self.ball_position['y'] <= self.paddle_positions['player1'] + 15) or \
         (self.ball_position['x'] >= 90 and self.paddle_positions['player2'] <= self.ball_position['y'] <= self.paddle_positions['player2'] + 15):
             self.ball_velocity['vx'] *= -1
-        print(self, "ball velocity",self.ball_velocity)
         # Scoring logic
         if self.ball_position['x'] <= 0:
             self.score['player2'] += 1
