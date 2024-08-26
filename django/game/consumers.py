@@ -97,25 +97,27 @@ class GameRoom:
     async def end_game(self, winner_identifier):
         # Find the player object that matches the winner identifier
         winner = next((player for player in self.players if player.player_number == winner_identifier), None)
+        loser = next((player for player in self.players if player.player_number != winner_identifier), None)
         if winner is None:
             print("Error: Winner not found in the game room.")
             return
         
-        print(f'Game over! {winner_identifier} wins!')
-        # end_message = {'type': 'game_over', 'message': f'{self.players[int(winner_identifier[-1])].user.username} wins!'}
-        end_message = {'type': 'game_over', 'message': f'{winner_identifier} wins!'}        
-        for player in self.players:
-            await player.send(json.dumps(end_message))
 
         self.game_active = False
 
         # Notify RoomManager if this room was part of a tournament
         if self in room_manager.tournament_rooms:
+            await winner.send(json.dumps({'type': 'notify', 'message': 'You have won the match!, waiting for other matches to finish...'}))
+            await loser.send(json.dumps({'type': 'notify', 'message': 'You have been eliminated, waiting for other matches to finish...'}))
             await room_manager.handle_semi_final_end(self, winner)
         elif self == room_manager.final_room:
             await room_manager.handle_final_end(winner)
         elif self == room_manager.third_place_room:
             await room_manager.handle_third_place_end(winner)
+        else:
+            print(f'Game over! {winner.user.username} wins!')
+            await winner.send(json.dumps({'type': 'game_over', 'message': 'You win!'}))
+            await loser.send(json.dumps({'type': 'game_over', 'message': 'You lose!'}))
 
     def check_score(self, player):
         if self.score[player] >= 5:  # Assuming 5 points needed to win
@@ -207,6 +209,11 @@ class RoomManager:
     async def handle_semi_final_end(self, room, winner):
         # Identify the loser in the semi-final room
         loser = next((player for player in room.players if player != winner), None)
+
+        # Send messages to both players
+        # await winner.send(json.dumps({'type': 'notify', 'message': 'You have advanced to the final!, starting final match...'}))
+        # await loser.send(json.dumps({'type': 'notify', 'message': 'You have been eliminated, starting third-place match...'}))
+
         self.semi_final_losers.append(loser)
 
         # Prepare the final room if not already done
@@ -226,9 +233,10 @@ class RoomManager:
                 self.third_place_room = self.create_room()
             third_place_player1 = self.semi_final_losers.pop(0)
             third_place_player2 = self.semi_final_losers.pop(0)
-            third_place_msg = {'type': 'notify', 'message': 'You are now in the third-place match!'}
-            await third_place_player1.send(json.dumps(third_place_msg))
-            await third_place_player2.send(json.dumps(third_place_msg))
+            for i in range(3):
+                await third_place_player1.send(json.dumps({'type': 'notify', 'message': f'You have been eliminated, starting third-place match in {3-i}...'}))
+                await third_place_player2.send(json.dumps({'type': 'notify', 'message': f'You have been eliminated, starting third-place match in {3-i}...'}))
+                await asyncio.sleep(1)
             await self.third_place_room.add_player(third_place_player1)
             await self.third_place_room.add_player(third_place_player2)
             # await self.third_place_room.start_game()
