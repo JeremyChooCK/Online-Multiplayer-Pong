@@ -8,34 +8,77 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
 
     async def disconnect(self , close_code):
         await self.channel_layer.group_discard(
-            self.roomGroupName , 
+            self.indivialRoom, 
+            self.channel_layer 
+        )
+        await self.channel_layer.group_discard(
+            self.allUsersRoom, 
             self.channel_layer 
         )
 
     async def receive(self, text_data): # receiving what was typed and sent by ownself. script, user use chatSocket.send. then its own server is receiving its own message and processed it.
         text_data_json = json.loads(text_data)
-        if text_data_json['type'] == 'username':
-            self.roomGroupName = text_data_json['content']
-            # self.roomGroupName = "chat_user_" + str(self.username)
+        
+        if text_data_json['type'] == 'createIndivialRoom':
+            self.indivialRoom = text_data_json['content']
+            self.allUsersRoom = "allUsers"
             await self.channel_layer.group_add(
-                self.roomGroupName,
+                self.indivialRoom,
                 self.channel_name
             )
-        else:
-            message = text_data_json["message"]
+            await self.channel_layer.group_add(
+                self.allUsersRoom,
+                self.channel_name
+            )
+        
+        if text_data_json['type'] == 'getStatusFromAllUsers': #triggers sendMessage method to everyone
+            await self.channel_layer.group_send(
+                self.allUsersRoom, {
+                    "type": "sendMessage",
+                    "purpose": "requestStatus",
+                    "message": "online",
+                    "username": self.indivialRoom,
+                }
+            )
+            
+        if text_data_json['type'] == 'replyPing': #triggers sendMessage method to everyone
             recipient_id = text_data_json["recipient_id"]
-            # check if user is muted
-            await self.channel_layer.group_send( #triggers sendMessage method to everyone less the reciever (which is the sender itself)
+            await self.channel_layer.group_send(
                 recipient_id, {
                     "type": "sendMessage",
-                    "message": message,
-                    "username": self.roomGroupName,
-                    "recipient_id": recipient_id,
+                    "purpose": "updateStatus",
+                    "message": "online",
+                    "username": self.indivialRoom,
                 }
             )
 
-    async def sendMessage(self , event) : 
+        if text_data_json['type'] == 'sendDirectMessage':
+            message = text_data_json["message"]
+            recipient_id = text_data_json["recipient_id"]
+            await self.channel_layer.group_send( #triggers sendMessage method to everyone less the reciever (which is the sender itself)
+                recipient_id, {
+                    "type": "sendMessage",
+                    "purpose": "directMessage",
+                    "message": message,
+                    "username": self.indivialRoom,
+                }
+            )
+        
+        if text_data_json['type'] == 'sendSystemMessage':
+            message = text_data_json["message"]
+            recipient_id = text_data_json["recipient_id"]
+            await self.channel_layer.group_send( #triggers sendMessage method to everyone less the reciever (which is the sender itself)
+                recipient_id, {
+                    "type": "sendMessage",
+                    "purpose": "directMessage",
+                    "message": message,
+                    "username": "pong-bot",
+                }
+            )
+
+    async def sendMessage(self , event) :
+        purpose = event["purpose"]
         message = event["message"]
         sender = event["username"]
-        await self.send(text_data = json.dumps({"message":message ,"sender":sender})) # send is a method id AsyncWebsocketConsumer class
+        await self.send(text_data = json.dumps({"purpose":purpose, "message":message ,"sender":sender})) # send is a method id AsyncWebsocketConsumer class
       
