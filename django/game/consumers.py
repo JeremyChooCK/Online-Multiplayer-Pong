@@ -32,7 +32,7 @@ class GameRoom:
                 await player.send(json.dumps({'error': 'Unauthorized'}))
                 return
 
-            player.player_number = 'player1' if len(self.players) == 1 else 'player2'
+            player.player_number = 'player2' if len(self.players) == 1 else 'player1'
             await player.send(json.dumps({'type': 'setup', 'player_number': player.player_number}))
 
             if len(self.players) == 2:
