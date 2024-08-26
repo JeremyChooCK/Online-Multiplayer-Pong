@@ -39,48 +39,60 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             )
             await self.start_game()
 
-    async def move_ai_paddle(self):
-        print('AI Paddle task started')
-        try:
-            while self.ai:
-                print('Start of loop iteration')
-                current_time = datetime.datetime.now()
-                print('Current time:', current_time)
-                print('Last AI update:', self.last_ai_update)
-                if self.last_ai_update:
-                    time_difference = current_time - self.last_ai_update
+    def predict_ball_position(self, ball_x, ball_y, ball_vx, ball_vy, player_number='player2'):
+        # while ball is not in ai score area
+        if player_number == 'player2':
+            while (ball_x < 90):
+                ball_x += ball_vx
+                ball_y += ball_vy
+                # if ball goes out of bounds, reverse the direction
+                if ball_y <= 0 or ball_y >= 100:
+                    ball_vy *= -1
+                    ball_y = max(0, min(ball_y, 100))
+                # assume player hits the ball
+                if ball_x <= 10:
+                    ball_vx *= -1
+                    ball_x = 10
+        else:
+            while (ball_x > 10):
+                ball_x += ball_vx
+                ball_y += ball_vy
+                # if ball goes out of bounds, reverse the direction
+                if ball_y <= 0 or ball_y >= 100:
+                    ball_vy *= -1
+                    ball_y = max(0, min(ball_y, 100))
+                # assume player hits the ball
+                if ball_x >= 90:
+                    ball_vx *= -1
+                    ball_x = 90
+        return ball_x, ball_y
+        
+
+    async def move_ai_paddle(self, player_number='player2'):
+        while self.ai:
+            ball_x, ball_y = self.ball_position['x'], self.ball_position['y']
+            ball_vx, ball_vy = self.ball_velocity['vx'], self.ball_velocity['vy']
+            pred_ball_x, pred_ball_y = self.predict_ball_position(ball_x, ball_y, ball_vx, ball_vy, player_number)
+            
+            # calculate how far the paddle should move
+            distance = pred_ball_y - self.paddle_positions[player_number]
+            # calculate how many moves in increments of 15 pixels the paddle should make
+            n = distance // 15
+
+            for i in range(abs(n)):
+                if n > 0:
+                    await self.move_paddle(player_number, self.paddle_positions[player_number] + 15)
                 else:
-                    time_difference = datetime.timedelta(seconds=100)
-                print('Time difference:', time_difference.total_seconds())
-
-                # Check if at least one second has passed
-                if not self.last_ai_update or time_difference.total_seconds() >= 0.3:
-                    print('Getting AI paddle position')
-                    ai_paddle_y = self.paddle_positions['player2']
-                    ball_y = self.ball_position['y']
-                    # Update the last AI update time
-                    self.last_ai_update = current_time
-
-                print(f'AI paddle Y: {ai_paddle_y}, Ball Y: {ball_y}')
-
-                if ball_y > ai_paddle_y + 10:  # +2 to prevent jittering
-                    ai_paddle_y = ai_paddle_y + 5  # Move down
-                elif ball_y < ai_paddle_y - 10:
-                    ai_paddle_y = ai_paddle_y - 5  # Move up
-
-                # Update the AI paddle position
-                print('New AI Paddle Y:', ai_paddle_y)
-                await self.move_paddle('player2', ai_paddle_y)
-
-                print('End of loop iteration')
+                    await self.move_paddle(player_number, self.paddle_positions[player_number] - 15)
                 await asyncio.sleep(0.1)
 
-        except Exception as e:
-            print(f'Error in move_ai_paddle: {str(e)}')
-            import traceback
-            print(traceback.format_exc())
-        
-        print('AI Paddle task ended')
+            time_to_sleep = 1 - (abs(n) * 0.1)
+            print(time_to_sleep)
+            await asyncio.sleep(1 - (abs(n) * 0.1))
+
+
+
+
 
     async def disconnect(self, close_code):
         player_number = self.player_mapping.get(self.channel_name)
@@ -122,7 +134,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         # Game starting logic here
         self.game_loop_task = asyncio.create_task(self.game_loop())
         if self.ai:
-            self.ai_task = asyncio.create_task(self.move_ai_paddle())
+            self.ai_task2 = asyncio.create_task(self.move_ai_paddle('player1'))
+            self.ai_task = asyncio.create_task(self.move_ai_paddle('player2'))
 
     async def game_loop(self):
         # Game loop logic here
@@ -186,7 +199,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         # Reset ball position to center and adjust direction
         self.ball_position = {'x': 50, 'y': 50}
         self.ball_velocity = {'vx': random.choice([-2, 2]), 'vy': random.choice([-1, 1])}
-
+        self.ai_last_update = None
 
     async def ball_movement(self, event):
         ball_position = event['ball_position']
