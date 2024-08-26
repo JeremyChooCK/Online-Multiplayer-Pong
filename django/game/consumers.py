@@ -8,6 +8,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from urllib.parse import parse_qs
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
+from authentication.models import UserProfile
+from datetime import datetime
 
 class GameRoom:
     def __init__(self):
@@ -118,6 +120,7 @@ class GameRoom:
             print(f'Game over! {winner.user.username} wins!')
             await winner.send(json.dumps({'type': 'game_over', 'message': 'You win!'}))
             await loser.send(json.dumps({'type': 'game_over', 'message': 'You lose!'}))
+            await room_manager.handle_one_on_one_end(winner, loser)
 
     def check_score(self, player):
         if self.score[player] >= 5:  # Assuming 5 points needed to win
@@ -209,11 +212,6 @@ class RoomManager:
     async def handle_semi_final_end(self, room, winner):
         # Identify the loser in the semi-final room
         loser = next((player for player in room.players if player != winner), None)
-
-        # Send messages to both players
-        # await winner.send(json.dumps({'type': 'notify', 'message': 'You have advanced to the final!, starting final match...'}))
-        # await loser.send(json.dumps({'type': 'notify', 'message': 'You have been eliminated, starting third-place match...'}))
-
         self.semi_final_losers.append(loser)
 
         # Prepare the final room if not already done
@@ -222,11 +220,7 @@ class RoomManager:
 
         # Add the winner to the final room
         await self.final_room.add_player(winner)
-
-        # If two winners are ready, start the final game
-        # if len(self.final_room.players) == 2:
-        #     await self.final_room.start_game()
-
+        
         # Prepare the third place match room
         if len(self.semi_final_losers) == 2:
             if not self.third_place_room:
@@ -239,41 +233,56 @@ class RoomManager:
                 await asyncio.sleep(1)
             await self.third_place_room.add_player(third_place_player1)
             await self.third_place_room.add_player(third_place_player2)
-            # await self.third_place_room.start_game()
-            # Notify players about the third-place match
 
 
     async def handle_final_end(self, winner):
-    # Find the loser in the final room
         loser = next((player for player in self.final_room.players if player != winner), None)
+        
+        # Update match histories
+        date = datetime.now().isoformat()
+        winner_details = {'result': 'lost', 'position': 1, 'mode' : 'tournament', 'date' : date}
+        loser_details = {'result': 'lost', 'position': 2, 'mode' : 'tournament', 'date' : date}
+        await update_match_history(winner.user, winner_details)
+        await update_match_history(loser.user, loser_details)
 
-        # Send messages to both players
-        if winner:
-            winner_msg = {'type': 'notify', 'message': 'Congratulations! You won the tournament!'}
-            await winner.send(json.dumps(winner_msg))
-        if loser:
-            loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 2nd in the tournament!'}
-            await loser.send(json.dumps(loser_msg))
+        # Send notifications
+        date = datetime.now().isoformat()
+        print("DATE", date)
+        winner_msg = {'type': 'notify', 'message': 'Congratulations! You won the tournament!', 'mode' : 'tournament', 'date' : date}
+        await winner.send(json.dumps(winner_msg))
+        loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 2nd in the tournament!', 'mode' : 'tournament', 'date' : date}
+        await loser.send(json.dumps(loser_msg))
 
-        print(f"Tournament concluded. Winner: {winner.user.username}")
         self.final_room = None
         self.tournament_rooms = []
 
     async def handle_third_place_end(self, winner):
-        # Find the loser in the third place room
         loser = next((player for player in self.third_place_room.players if player != winner), None)
+        
+        # Update match histories
+        date = datetime.now().isoformat()
+        winner_details = {'result': 'lost', 'position': 3,  'mode' : 'tournament', 'date' : date}
+        loser_details = {'result': 'lost', 'position': 4, 'mode' : 'tournament', 'date' : date}
+        await update_match_history(winner.user, winner_details)
+        await update_match_history(loser.user, loser_details)
 
-        # Send messages to both players
-        if winner:
-            winner_msg = {'type': 'notify', 'message': 'Congratulations! You finished 3rd in the tournament!'}
-            await winner.send(json.dumps(winner_msg))
-        if loser:
-            loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 4th in the tournament!'}
-            await loser.send(json.dumps(loser_msg))
+        # Send notifications
+        winner_msg = {'type': 'notify', 'message': 'Congratulations! You finished 3rd in the tournament!'}
+        await winner.send(json.dumps(winner_msg))
+        loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 4th in the tournament!'}
+        await loser.send(json.dumps(loser_msg))
 
-        print(f"Tournament concluded. Third place: {winner.user.username}")
         self.third_place_room = None
-        self.semi_final_losers = []
+    
+    async def handle_one_on_one_end(self, winner, loser):
+        print("winner", winner.user.username)
+        print("loser", loser.user.username)
+        # Update match histories
+        date = datetime.now().isoformat()
+        winner_details = {'result': 'won', 'mode' : '1v1', 'date' : date, 'winner' : winner.user.username, 'loser' : loser.user.username}
+        loser_details = {'result': 'lost', 'mode' : '1v1', 'date' : date, 'winner' : winner.user.username, 'loser' : loser.user.username}
+        await update_match_history(winner.user, winner_details)
+        await update_match_history(loser.user, loser_details)
 
     def reset_game_state(self):
         self.ball_position = {'x': 50, 'y': 50}
@@ -340,3 +349,9 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         if isinstance(message, dict):
             message = json.dumps(message)
         await super().send(message)
+
+@database_sync_to_async
+def update_match_history(user, match_details):
+    profile = UserProfile.objects.get(user=user)
+    profile.match_history.append(match_details)
+    profile.save()
