@@ -11,6 +11,51 @@ from channels.db import database_sync_to_async
 from authentication.models import UserProfile
 from datetime import datetime
 
+class BotPlayer:
+    def __init__(self):
+        self.user_id = 'ai'
+        self.player_number = 'player2'
+        self.game_room = None
+
+    def predict_ball_position(self, ball_x, ball_y, ball_vx, ball_vy):
+        # while ball is not in ai score area
+        while (ball_x < 90):
+            ball_x += ball_vx
+            ball_y += ball_vy
+            if ball_y < 0 or ball_y > 100:
+                ball_vy *= -1
+                ball_y = max(0, min(ball_y, 100))
+            if ball_x <= 10: #assume player always hits the ball
+                ball_vx *= -1
+                ball_x = 10
+        return ball_x, ball_y
+
+    async def move_ai_paddle(self):
+        while self.game_room:
+            ball_x = self.game_room.ball_position['x']
+            ball_y = self.game_room.ball_position['y']
+            ball_vx = self.game_room.ball_velocity['vx']
+            ball_vy = self.game_room.ball_velocity['vy']
+            pred_x, pred_y = self.predict_ball_position(ball_x, ball_y, ball_vx, ball_vy)
+
+            #calculate how far the paddle should move
+            paddle_position = self.game_room.paddle_positions[self.player_number]
+            distance = pred_y - paddle_position
+            # calculate how many moves of 15 units are needed to reach the predicted position
+            steps = distance // 15
+            # cap the number of moves to 10
+            n = min(abs(steps), 10)
+
+            # change paddleposition to 'up' or 'down'
+            for i in range(n):
+                # if steps is positive, paddle_position += 15, else paddle_position -= 15
+                paddle_position += 15 if steps > 0 else -15
+                await self.game_room.move_paddle(self, paddle_position)
+                await asyncio.sleep(0.1)
+            
+            #update once a second, less the number of moves * 0.1s
+            await asyncio.sleep(1 - n * 0.1)
+
 class GameRoom:
     def __init__(self):
         self.room_id = uuid.uuid4().hex
@@ -20,6 +65,27 @@ class GameRoom:
         self.score = {'player1': 0, 'player2': 0}
         self.paddle_positions = {'player1': 50, 'player2': 50}
         self.game_active = False
+
+    async def add_player_vs_ai(self, player):
+        self.players.append(player)
+        player.game_room = self
+
+        # Fetch user asynchronously
+        player.user = await database_sync_to_async(User.objects.get)(id=player.user_id)
+
+        if not player.user.is_authenticated:
+            await player.send(json.dumps({'error': 'Unauthorized'}))
+            return
+        
+        player.player_number = 'player1'
+        await player.send(json.dumps({'type': 'setup', 'player_number': player.player_number}))
+
+        # Add AI player
+        ai_player = BotPlayer()
+        ai_player.game_room = self
+        ai_player.player_number = 'player2'
+        print("starting ai game")
+        await self.start_ai_game(ai_player)
 
     async def add_player(self, player):
         if len(self.players) < 2:
@@ -54,6 +120,20 @@ class GameRoom:
         for player in self.players:
             await player.send(json.dumps(start_message))
         asyncio.create_task(self.game_loop())
+
+    async def start_ai_game(self, ai_player):
+        # Send a countdown before the game starts
+        for i in range(3, 0, -1):
+            countdown_message = {'type': 'notify', 'message': f'Game starts in {i}...'}
+            print(countdown_message)
+            await self.players[0].send(json.dumps(countdown_message))
+            await asyncio.sleep(1)
+        
+        self.game_active = True
+        start_message = {'type': 'notify', 'message': 'Game is starting!'}
+        await self.players[0].send(json.dumps(start_message))
+        asyncio.create_task(self.game_loop())
+        asyncio.create_task(ai_player.move_ai_paddle())
 
     async def game_loop(self):
         while self.game_active:
@@ -173,11 +253,13 @@ class RoomManager:
         self.waiting_players_one_on_one = []
         self.waiting_players_tournament = []
         self.tournament_rooms = []
+        self.ai_rooms = []
         self.final_room = None
         self.third_place_room = None  # Room for third place match
         self.semi_final_losers = []  # List to keep track of the losers of the semi-finals
 
     async def queue_player(self, player, game_mode):
+        print(f'Player {player.user_id} queued for {game_mode}')
         if game_mode == 'one_on_one':
             if self.waiting_players_one_on_one:
                 room = self.create_room()
@@ -186,6 +268,7 @@ class RoomManager:
             else:
                 self.waiting_players_one_on_one.append(player)
                 await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for an opponent...'}))
+
         elif game_mode == 'tournament':
             self.waiting_players_tournament.append(player)
             for player in self.waiting_players_tournament:
@@ -203,6 +286,12 @@ class RoomManager:
                 await semi_final_1.add_player(self.waiting_players_tournament.pop(0))
                 await semi_final_2.add_player(self.waiting_players_tournament.pop(0))
                 await semi_final_2.add_player(self.waiting_players_tournament.pop(0))
+        
+        elif game_mode == 'ai':
+            ai_room = self.create_room()
+            self.ai_rooms.append(ai_room)
+            print("making ai room")
+            await ai_room.add_player_vs_ai(player)
 
     def create_room(self):
         room = GameRoom()
@@ -306,15 +395,19 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             access_token = AccessToken(token)
             self.user_id = access_token['user_id']
         except TokenError as e:
+            print(f'Invalid token: {e}')
             await self.send(json.dumps({'error': 'Invalid token', 'details': str(e)}))
             await self.close()
             return
-
+        print("checking mode")
         # Process different game modes
         if mode == 'tournament':
             await self.handle_tournament_mode(self.user_id)
         elif mode == 'one_on_one':
             await self.handle_one_on_one_mode(self.user_id)
+        elif mode == 'ai':
+            print("ai mode")
+            await self.handle_ai_mode(self.user_id)
         else:
             await self.send(json.dumps({'error': 'Invalid game mode'}))
             await self.close()
@@ -326,6 +419,10 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def handle_one_on_one_mode(self, user_id):
         # Logic to handle one on one mode
         await room_manager.queue_player(self, game_mode='one_on_one')
+
+    async def handle_ai_mode(self, user_id):
+        # Logic to handle AI mode
+        await room_manager.queue_player(self, game_mode='ai')
 
     async def disconnect(self, close_code):
         if hasattr(self, 'game_room'):

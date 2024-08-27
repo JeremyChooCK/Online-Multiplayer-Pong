@@ -31,6 +31,16 @@ oneOnOneButton.addEventListener('click', async function() {
     startGame(url);
 });
 
+oneAiButton.addEventListener('click', async function() {
+    const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
+    if (!token) {
+        messageBox.innerText = "You are not logged in.";
+        return;
+    }
+    let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=ai`;
+    startGame(url);
+});
+
 function startGame(url) {
 
     console.log("WebSocket URL:", url);
