@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
 from authentication.models import UserProfile
 from datetime import datetime
+import websockets
 
 class BotPlayer:
     def __init__(self):
@@ -197,10 +198,12 @@ class GameRoom:
         elif self == room_manager.third_place_room:
             await room_manager.handle_third_place_end(winner)
         else:
+            # this is for 1v1 mode
             print(f'Game over! {winner.user.username} wins!')
             await winner.send(json.dumps({'type': 'game_over', 'message': 'You win!'}))
             await loser.send(json.dumps({'type': 'game_over', 'message': 'You lose!'}))
             await room_manager.handle_one_on_one_end(winner, loser)
+        print("active connections", RoomManager.active_connections)
 
     def check_score(self, player):
         if self.score[player] >= 5:  # Assuming 5 points needed to win
@@ -208,13 +211,16 @@ class GameRoom:
             self.reset_ball()
 
     async def broadcast_game_state(self):
-        state = json.dumps({
-            'ball_position': self.ball_position,
-            'score': self.score,
-            'paddle_positions': self.paddle_positions
-        })
         for player in self.players:
-            await player.send(state)
+            try:
+                await player.send(json.dumps({
+                    'ball_position': self.ball_position,
+                    'score': self.score,
+                    'paddle_positions': self.paddle_positions
+                }))
+            except websockets.exceptions.ConnectionClosed:
+                print(f'Player {player.user.username} is disconnected')
+                continue  # Skip sending updates to disconnected clients
 
     async def remove_player(self, player):
         self.players.remove(player)
@@ -248,6 +254,7 @@ class GameRoom:
             self.paddle_positions['player2'] = new_position
 
 class RoomManager:
+    active_connections = {}
     def __init__(self):
         self.rooms = {}
         self.waiting_players_one_on_one = []
@@ -344,6 +351,20 @@ class RoomManager:
 
         self.final_room = None
         self.tournament_rooms = []
+        if winner.user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(winner.user_id, None)
+            try:
+                await winner.close()
+                print("winner closed")
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
+        if loser.user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(loser.user_id, None)
+            try:
+                await loser.close()
+                print("loser closed")
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
 
     async def handle_third_place_end(self, winner):
         loser = next((player for player in self.third_place_room.players if player != winner), None)
@@ -362,7 +383,23 @@ class RoomManager:
         await loser.send(json.dumps(loser_msg))
 
         self.third_place_room = None
-    
+        RoomManager.active_connections.pop(winner.user_id, None)
+        RoomManager.active_connections.pop(loser.user_id, None)
+        if winner.user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(winner.user_id, None)
+            try:
+                await winner.close()
+                print("winner closed")
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
+        if loser.user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(loser.user_id, None)
+            try:
+                await loser.close()
+                print("loser closed")
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
+
     async def handle_one_on_one_end(self, winner, loser):
         print("winner", winner.user.username)
         print("loser", loser.user.username)
@@ -372,6 +409,20 @@ class RoomManager:
         loser_details = {'result': 'lost', 'mode' : '1v1', 'date' : date, 'winner' : winner.user.username, 'loser' : loser.user.username}
         await update_match_history(winner.user, winner_details)
         await update_match_history(loser.user, loser_details)
+        if winner.user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(winner.user_id, None)
+            try:
+                await winner.close()
+                print("winner closed")
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
+        if loser.user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(loser.user_id, None)
+            try:
+                await loser.close()
+                print("loser closed")
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
 
     def reset_game_state(self):
         self.ball_position = {'x': 50, 'y': 50}
@@ -401,6 +452,12 @@ class PongGameConsumer(AsyncWebsocketConsumer):
             return
         print("checking mode")
         # Process different game modes
+        if RoomManager.active_connections.get(self.user_id):
+            print(f'User {self.user_id} is already in a game')
+            await self.send(json.dumps({'type': 'notify', 'message': 'You are already in a game'}))
+            await self.close()
+            return
+        RoomManager.active_connections[self.user_id] = self
         if mode == 'tournament':
             await self.handle_tournament_mode(self.user_id)
         elif mode == 'one_on_one':
