@@ -67,27 +67,6 @@ class GameRoom:
         self.paddle_positions = {'player1': 50, 'player2': 50}
         self.game_active = False
 
-    async def add_player_vs_ai(self, player):
-        self.players.append(player)
-        player.game_room = self
-
-        # Fetch user asynchronously
-        player.user = await database_sync_to_async(User.objects.get)(id=player.user_id)
-
-        if not player.user.is_authenticated:
-            await player.send(json.dumps({'error': 'Unauthorized'}))
-            return
-        
-        player.player_number = 'player1'
-        await player.send(json.dumps({'type': 'setup', 'player_number': player.player_number}))
-
-        # Add AI player
-        ai_player = BotPlayer()
-        ai_player.game_room = self
-        ai_player.player_number = 'player2'
-        print("starting ai game")
-        await self.start_ai_game(ai_player)
-
     async def add_player(self, player):
         if len(self.players) < 2:
             self.players.append(player)
@@ -122,20 +101,6 @@ class GameRoom:
             await player.send(json.dumps(start_message))
         asyncio.create_task(self.game_loop())
 
-    async def start_ai_game(self, ai_player):
-        # Send a countdown before the game starts
-        for i in range(3, 0, -1):
-            countdown_message = {'type': 'notify', 'message': f'Game starts in {i}...'}
-            print(countdown_message)
-            await self.players[0].send(json.dumps(countdown_message))
-            await asyncio.sleep(1)
-        
-        self.game_active = True
-        start_message = {'type': 'notify', 'message': 'Game is starting!'}
-        await self.players[0].send(json.dumps(start_message))
-        asyncio.create_task(self.game_loop())
-        asyncio.create_task(ai_player.move_ai_paddle())
-
     async def game_loop(self):
         while self.game_active:
             await asyncio.sleep(0.016)  # Simulate 60 FPS game update
@@ -163,10 +128,11 @@ class GameRoom:
         self.handle_collisions()
 
     def handle_collisions(self):
-    # Paddle collision logic
-        if (self.ball_position['x'] <= 10 and self.paddle_positions['player1'] <= self.ball_position['y'] <= self.paddle_positions['player1'] + 15) or \
-        (self.ball_position['x'] >= 90 and self.paddle_positions['player2'] <= self.ball_position['y'] <= self.paddle_positions['player2'] + 15):
+        # Paddle collision logic
+        if (5 <= self.ball_position['x'] <= 10 and self.paddle_positions['player1'] <= self.ball_position['y'] <= self.paddle_positions['player1'] + 15) or \
+        (95 >= self.ball_position['x'] >= 90 and self.paddle_positions['player2'] <= self.ball_position['y'] <= self.paddle_positions['player2'] + 15):
             self.ball_velocity['vx'] *= -1
+            self.ball_position['x'] = 10 if self.ball_position['x'] < 50 else 90
         # Scoring logic
         if self.ball_position['x'] <= 0:
             self.score['player2'] += 1
@@ -260,7 +226,7 @@ class RoomManager:
         self.waiting_players_one_on_one = []
         self.waiting_players_tournament = []
         self.tournament_rooms = []
-        self.ai_rooms = []
+        self.ai_rooms = {}
         self.final_room = None
         self.third_place_room = None  # Room for third place match
         self.semi_final_losers = []  # List to keep track of the losers of the semi-finals
@@ -295,10 +261,13 @@ class RoomManager:
                 await semi_final_2.add_player(self.waiting_players_tournament.pop(0))
         
         elif game_mode == 'ai':
-            ai_room = self.create_room()
-            self.ai_rooms.append(ai_room)
-            print("making ai room")
+            ai_room = self.create_ai_room()
             await ai_room.add_player_vs_ai(player)
+
+    def create_ai_room(self):
+        room = AIGameRoom()
+        self.ai_rooms[room.room_id] = room
+        return room
 
     def create_room(self):
         room = GameRoom()
@@ -509,3 +478,66 @@ def update_match_history(user, match_details):
     profile = UserProfile.objects.get(user=user)
     profile.match_history.append(match_details)
     profile.save()
+
+class AIGameRoom(GameRoom):
+    def __init__(self):
+        super().__init__()
+        self.ai_player = None
+
+    async def add_player_vs_ai(self, player):
+        self.players.append(player)
+        player.game_room = self
+
+        # Fetch user asynchronously
+        player.user = await database_sync_to_async(User.objects.get)(id=player.user_id)
+
+        if not player.user.is_authenticated:
+            await player.send(json.dumps({'error': 'Unauthorized'}))
+            return
+        
+        player.player_number = 'player1'
+        await player.send(json.dumps({'type': 'setup', 'player_number': player.player_number}))
+
+        # Add AI player
+        self.ai_player = BotPlayer()
+        self.ai_player.game_room = self
+        self.ai_player.player_number = 'player2'
+        print("starting ai game")
+        await self.start_ai_game()
+
+    async def end_game(self, winner_identifier):
+        self.game_active = False
+        
+        message = 'You win!' if winner_identifier == 'player1' else 'You lose!'
+        await self.players[0].send(json.dumps({'type': 'game_over', 'message': message}))
+
+        date = datetime.now().isoformat()
+        result = 'won' if winner_identifier == 'player1' else 'lost'
+        winner = self.players[0].user.username if winner_identifier == 'player1' else 'CPU'
+        loser = 'CPU' if winner_identifier == 'player1' else self.players[0].user.username
+        player_details = {'result': result, 'mode': 'ai', 'date': date, 'winner': winner, 'loser': loser}
+        await update_match_history(self.players[0].user, player_details)
+        if self.players[0].user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(self.players[0].user_id, None)
+            try:
+                await self.players[0].close()
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
+
+    def check_score(self, player):
+        if self.score[player] >= 5:
+            asyncio.create_task(self.end_game(player))
+
+    async def start_ai_game(self):
+        # Send a countdown before the game starts
+        for i in range(3, 0, -1):
+            countdown_message = {'type': 'notify', 'message': f'Game starts in {i}...'}
+            print(countdown_message)
+            await self.players[0].send(json.dumps(countdown_message))
+            await asyncio.sleep(1)
+        
+        self.game_active = True
+        start_message = {'type': 'notify', 'message': 'Game is starting!'}
+        await self.players[0].send(json.dumps(start_message))
+        asyncio.create_task(self.game_loop())
+        asyncio.create_task(self.ai_player.move_ai_paddle())
