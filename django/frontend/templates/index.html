@@ -49,12 +49,11 @@
                                     <div class="form-group text-xs-center">
                                         <small><a href="#">Forgot password?</a></small>
                                     </div>
-                                </a>
-                            </form>
-                            <button onclick="redirectToOAuthProvider()" class="btn btn-primary btn-block">
-                                Sign in with
-                                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/42_Logo.svg/2048px-42_Logo.svg.png" alt="42 Logo" class="mr-2" style="width: 20px;">
-                            </button>
+                                </form>
+                                <button onclick="redirectToOAuthProvider()" class="btn btn-primary btn-block">
+                                    Sign in with
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/8d/42_Logo.svg/2048px-42_Logo.svg.png" alt="42 Logo" class="mr-2" style="width: 20px;">
+                                </button>
                             </li>
                         </ul>
                     </li>
@@ -83,22 +82,23 @@
             </div>
         </div>
     </nav>
-    <div class="container rounded bg-white mt-5 mb-5"  id="profile_settings" style="display: none;">
+    <div class="container-fluid rounded bg-white mt-5 mb-5" id="profile_settings" style="display: none;">
         <div class="row">
-            <div class="col-md-3 border-right">
+            <div class="col-md-4 border-right">
                 <div class="d-flex flex-column align-items-center text-center p-3 py-5">
                     <img class="rounded-circle mt-5" width="150px" id="profile_page_pic" src="">
                     <input id="profile_page_pic_input" type="file" accept="image/" style="display: none;">
                     <span id="profile_settings_name" class="font-weight-bold"></span>
                 </div>
             </div>
-            <div class="col-md-5 border-right">
+            <div class="col-md-8">
                 <div class="p-3 py-5">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h4 class="text-right">Profile Settings</h4>
                     </div>
                     <div class="row mt-3">
-                        <div class="col-md-12"><label class="labels">Name  <i id="edit_name" onclick="editName()" class="fa-solid fa-pen-to-square"></i></label>
+                        <div class="col-md-12">
+                            <label class="labels">Name  <i id="edit_name" onclick="editName()" class="fa-solid fa-pen-to-square"></i></label>
                             <input id="profile_name_input" type="text" class="form-control" style="display: none;">
                             <p id="profile_name"></p>
                         </div>
@@ -112,21 +112,37 @@
                         <button onclick="cancelNameChange()" class="btn btn-primary profile-button" type="button">Cancel</button>
                     </div>
                 </div>
+            </div>            
+        </div>
+        <!-- New table starts here -->
+        <div class="row mt-3" id="match_history">
+            <div class="col-md-12">
+                <div> <!-- Wrap the table in a div -->
+                    <table class="table table-bordered w-75" id="match_history_table">
+                        <thead>
+                            Match History
+                        </thead>
+                        <tbody id="match_history_body">
+                            <!-- Rows will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
-    </div>
+        <!-- New table ends here -->
+    </div>    
     <div id="pongGame">
         <div id="paddle1" class="paddle"></div>
         <div id="paddle2" class="paddle"></div>
         <div id="ball"></div>
-    </div>
-    <button id="joinButton">Join Tournament</button>
-    <button id="oneOnOneButton">1v1</button>
-    <button id="oneAiButton">1vBot</button>
-    <div id="messageBox"></div>
-    <div id="score">
-        Player 1: <span id="player1Score">0</span>
-        Player 2: <span id="player2Score">0</span>
+        <button id="joinButton">Join Tournament</button>
+        <button id="oneOnOneButton">1v1</button>
+        <button id="oneAiButton">1vBot</button>
+        <div id="messageBox"></div>
+        <div id="score">
+            Player 1: <span id="player1Score">0</span>
+            Player 2: <span id="player2Score">0</span>
+        </div>
     </div>
     <div id="winMessage"></div>
     <script src="../static/js/game.js"></script>

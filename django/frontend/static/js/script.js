@@ -268,13 +268,34 @@ function redirectToOAuthProvider() {
 
 async function loadProfile(){
     document.getElementById("profile_settings").style.display = '';
-    userData = await fetchUserData();
+    const userData = await fetchUserData();
     if(userData){
         document.getElementById("profile_page_pic").src = userData.profile.profile_picture;
         document.getElementById("profile_settings_name").textContent = userData.username;
         document.getElementById("profile_wins").textContent = userData.profile.wins;
         document.getElementById("profile_losses").textContent = userData.profile.losses;
         document.getElementById("profile_name").textContent = userData.username;
+
+        const matchHistoryBody = document.getElementById("match_history_body");
+        matchHistoryBody.innerHTML = ''; // Clear existing rows
+
+        userData.profile.match_history.forEach((match) => {
+            let row = document.createElement("tr");
+            let date = document.createElement("td");
+            let result = document.createElement("td");
+            date.textContent = match.date;
+            result.textContent = match.result || match.loser;
+            row.appendChild(date);
+            row.appendChild(result);
+            matchHistoryBody.appendChild(row);
+        });
+
+        // Make the match history scrollable if there are more than 5 entries
+        if (userData.profile.match_history.length > 5) {
+            matchHistoryBody.classList.add("scrollable-table");
+        } else {
+            matchHistoryBody.classList.remove("scrollable-table");
+        }
     }
 }
 

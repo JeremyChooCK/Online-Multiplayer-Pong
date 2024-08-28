@@ -12,6 +12,7 @@ body, html {
     width: 600px;
     height: 400px;
     border: 2px solid #000000;
+    /* display: none; */
 }
 
 .paddle {

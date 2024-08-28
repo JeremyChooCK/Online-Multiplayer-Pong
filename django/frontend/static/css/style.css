@@ -91,3 +91,16 @@
 	filter: brightness(0) saturate(10%) invert(43%) sepia(2%) saturate(1901%) hue-rotate(177deg) brightness(94%) contrast(83%);
 	transition: .1s;
 }
+
+#match_history_table tbody {
+    display: block; /* Set display to block for the tbody */
+    max-height: 350px; /* Ensure this is consistent */
+    overflow-y: auto; /* Enable vertical scrolling */
+	border: black 1px solid;
+}
+
+#match_history_table thead, #match_history_table tbody tr {
+    display: table; /* Maintain table layout */
+    width: 100%; /* Ensure the table width remains 100% */
+    table-layout: fixed; /* Fix column widths */
+}
