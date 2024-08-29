@@ -29,6 +29,9 @@ class BotPlayer:
             if ball_x <= 10: #assume player always hits the ball
                 ball_vx *= -1
                 ball_x = 10
+        # variable difficulty based on score difference
+        score_diff = self.game_room.score['player1'] - self.game_room.score['player2']
+        ball_y += random.randrange(score_diff - 2, -(score_diff - 2), 1)
         return ball_x, ball_y
 
     async def move_ai_paddle(self):
@@ -42,16 +45,13 @@ class BotPlayer:
             #calculate how far the paddle should move
             paddle_position = self.game_room.paddle_positions[self.player_number]
             distance = pred_y - paddle_position
-            # calculate how many moves of 15 units are needed to reach the predicted position
-            steps = distance // 15
+            # calculate how many moves of 10 units are needed to reach the predicted position
+            steps = distance // 10
             # cap the number of moves to 10
             n = min(abs(steps), 10)
 
-            # change paddleposition to 'up' or 'down'
             for i in range(n):
-                # if steps is positive, paddle_position += 15, else paddle_position -= 15
-                paddle_position += 15 if steps > 0 else -15
-                await self.game_room.move_paddle(self, paddle_position)
+                await self.game_room.move_paddle(self, 'down' if steps > 0 else 'up')
                 await asyncio.sleep(0.1)
             
             #update once a second, less the number of moves * 0.1s
@@ -203,16 +203,27 @@ class GameRoom:
             'vy': base_velocity_y,
         }
     
-    async def move_paddle(self, player, position):
+    async def move_paddle(self, player, direction):
+        print(f'Moving paddle for {player} in direction {direction}')
         # Ensure position is within the game boundaries
         max_height = 100  # assuming the game field height is 100 units
         paddle_height = 15  # assuming each paddle is 15 units tall
         min_position = 1
         max_position = max_height - paddle_height
+        per_move = 10  # assuming each move is 10 units
+
+        # Calculate the new position based on the direction
+        position = self.paddle_positions[player.player_number]
+        if direction == 'up':
+            position -= per_move
+        elif direction == 'down':
+            position += per_move
+        else:
+            return
 
         # Clamp the position to stay within the boundaries
         new_position = max(min_position, min(position, max_position))
-
+        print(f'New position: {new_position}')
         # Determine which player is moving and update their paddle position
         if player.player_number == 'player1':
             self.paddle_positions['player1'] = new_position
@@ -460,7 +471,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         if self.game_room and 'action' in data:
             if data['action'] == 'move_paddle':
-                await self.game_room.move_paddle(self, data['position'])
+                await self.game_room.move_paddle(self, data['direction'])
 
     async def send_paddle_move(self, position):
         if self.game_room:

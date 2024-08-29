@@ -41,6 +41,16 @@ oneAiButton.addEventListener('click', async function() {
     startGame(url);
 });
 
+localButton.addEventListener('click', async function() {
+    const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
+    if (!token) {
+        messageBox.innerText = "You are not logged in.";
+        return;
+    }
+    let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=local`;
+    startGame(url);
+});
+
 function startGame(url) {
 
     console.log("WebSocket URL:", url);
@@ -132,13 +142,22 @@ function getPaddlePosition(key) {
 
 let isUpPressed = false;
 let isDownPressed = false;
+let isWPressed = false;
+let isSPressed = false;
 
 document.addEventListener('keydown', function(event) {
-    // console.log("playerNumber", playerNumber);
     if (event.key === 'ArrowUp') {
         isUpPressed = true;
+        sendPaddleMove('up');
     } else if (event.key === 'ArrowDown') {
         isDownPressed = true;
+        sendPaddleMove('down');
+    } else if (event.key === 'w') {
+        isWPressed = true;
+        sendPaddleMove('w');
+    } else if (event.key === 's') {
+        isSPressed = true;
+        sendPaddleMove('s');
     }
 });
 
@@ -147,8 +166,20 @@ document.addEventListener('keyup', function(event) {
         isUpPressed = false;
     } else if (event.key === 'ArrowDown') {
         isDownPressed = false;
+    } else if (event.key === 'w') {
+        isWPressed = false;
+    } else if (event.key === 's') {
+        isSPressed = false;
     }
 });
+
+function sendPaddleMove(direction) {
+    gameSocket.send(JSON.stringify({
+        action: 'move_paddle',
+        direction: direction,
+        user_id: 1
+    }));
+}
 
 let lastUpdateTime = 0;
 const updateInterval = 50; // Update every 50 milliseconds
@@ -156,22 +187,16 @@ const updateInterval = 50; // Update every 50 milliseconds
 function updatePaddlePosition(timestamp) {
     if (timestamp - lastUpdateTime > updateInterval) {
         if (isUpPressed) {
-            const newPosition = getPaddlePosition('ArrowUp');
-            // console.log("newPosition up", newPosition);
-            gameSocket.send(JSON.stringify({
-                action: 'move_paddle',
-                position: newPosition,
-                user_id: 1
-            }));
+            sendPaddleMove('up');
         }
         if (isDownPressed) {
-            const newPosition = getPaddlePosition('ArrowDown');
-            // console.log("newPosition down", newPosition);
-            gameSocket.send(JSON.stringify({
-                action: 'move_paddle',
-                position: newPosition,
-                user_id: 1
-            }));
+            sendPaddleMove('down');
+        }
+        if (isWPressed) {
+            sendPaddleMove('w');
+        }
+        if (isSPressed) {
+            sendPaddleMove('s');
         }
         lastUpdateTime = timestamp;
     }
