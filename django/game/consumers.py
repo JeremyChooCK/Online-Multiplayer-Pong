@@ -204,7 +204,6 @@ class GameRoom:
         }
     
     async def move_paddle(self, player, direction):
-        print(f'Moving paddle for {player} in direction {direction}')
         # Ensure position is within the game boundaries
         max_height = 100  # assuming the game field height is 100 units
         paddle_height = 15  # assuming each paddle is 15 units tall
@@ -219,11 +218,11 @@ class GameRoom:
         elif direction == 'down':
             position += per_move
         else:
+            print(f'direction {direction} is not recognized')
             return
 
         # Clamp the position to stay within the boundaries
         new_position = max(min_position, min(position, max_position))
-        print(f'New position: {new_position}')
         # Determine which player is moving and update their paddle position
         if player.player_number == 'player1':
             self.paddle_positions['player1'] = new_position
