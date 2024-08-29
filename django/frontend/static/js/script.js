@@ -22,12 +22,12 @@ async function checkAuthOnLoad() {
     }
 }
 
-async function fetchUserData() {
+async function fetchUserData(user_id) {
     const ip = "https://localhost/";
     const token = localStorage.getItem("accessToken");
 
     try {
-        const response = await fetch(ip + "auth/user_details/", {
+        const response = await fetch(`${ip}auth/user_details/${user_id}/`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -59,11 +59,13 @@ async function fetchUserData() {
 }
 
 async function updateUIOnLogin() {
+    token = localStorage.getItem("accessToken");
+    user_id = jwt_decode(token).user_id;
     document.getElementById("welcomeSection").style.display = '';
     document.getElementById("logoutButton").style.display = '';
     document.getElementById("loginButton").style.display = 'none';
     document.getElementById("registerButton").style.display = 'none';
-    userData = await fetchUserData();
+    userData = await fetchUserData(user_id);
     if(userData.profile.profile_picture){
         document.getElementById("profile_pic").src = userData.profile.profile_picture;
         document.getElementById("usernameDisplay").textContent = userData.username;
@@ -266,9 +268,11 @@ function redirectToOAuthProvider() {
     window.location.href = authUrl; // This will redirect the user to the OAuth provider
 }
 
-async function loadProfile(){
+async function loadProfile(user_id) {
+    token = localStorage.getItem("accessToken");
+    user_id = jwt_decode(token).user_id;
     document.getElementById("profile_settings").style.display = '';
-    const userData = await fetchUserData();
+    const userData = await fetchUserData(user_id);
     if(userData){
         document.getElementById("profile_page_pic").src = userData.profile.profile_picture;
         document.getElementById("profile_settings_name").textContent = userData.username;
@@ -376,6 +380,15 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+document.addEventListener('DOMContentLoaded', function () {
+    document.getElementById('profile_pic').addEventListener('click', function() {
+        token = localStorage.getItem("accessToken");
+        user_id = jwt_decode(token).user_id;
+        loadProfile(user_id);
+        console.log("profiel pic clicked");
+    });
+});
+
 document.getElementById('profile_page_pic_input').addEventListener('change', function(event) {
     const file = event.target.files[0];
     if (file) {
@@ -395,6 +408,7 @@ async function uploadFile(file) {
         const formData = new FormData();
         formData.append('profile_picture', file);
         const token = localStorage.getItem("accessToken");
+        user_id = jwt_decode(token).user_id;
         console.log("dsadsadsadsadsadsadsad TOKEN: ", token);
         const csrfToken = getCookie('csrftoken'); // Function to get CSRF token from cookies
         console.log("CSRF Token: ", csrfToken);
@@ -413,7 +427,7 @@ async function uploadFile(file) {
         }
         const data = await response.json();
         console.log('successfully uploaded picture');
-        data = fetchUserData();
+        data = fetchUserData(user_id);
         console.log("AAAAAAAAAAAAAA", data);
         document.getElementById("profile_pic").src = data.profile_picture;
         document.getElementById("profile_page_pic").src = data.profile_picture;

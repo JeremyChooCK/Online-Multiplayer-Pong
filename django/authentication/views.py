@@ -25,6 +25,7 @@ from rest_framework import generics, permissions
 from .models import UserProfile
 from django.conf import settings
 from django.views.decorators.csrf import csrf_protect
+from django.shortcuts import get_object_or_404
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -145,7 +146,8 @@ class UserDetailView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        user_id = self.kwargs.get('user_id')
+        return get_object_or_404(User, id=user_id)
 
 class UpdateUsernameView(APIView):
     permission_classes = [permissions.IsAuthenticated]
