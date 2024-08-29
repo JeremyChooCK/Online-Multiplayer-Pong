@@ -273,6 +273,10 @@ class RoomManager:
         elif game_mode == 'ai':
             ai_room = self.create_ai_room()
             await ai_room.add_player_vs_ai(player)
+        
+        elif game_mode == 'local':
+            local_room = self.create_local_room()
+            await local_room.add_player_local(player)
 
     def create_ai_room(self):
         room = AIGameRoom()
@@ -284,6 +288,11 @@ class RoomManager:
         self.rooms[room.room_id] = room
         return room
     
+    def create_local_room(self):
+        room = LocalGameRoom()
+        self.rooms[room.room_id] = room
+        return room
+
     async def handle_semi_final_end(self, room, winner):
         # Identify the loser in the semi-final room
         loser = next((player for player in room.players if player != winner), None)
@@ -444,6 +453,9 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         elif mode == 'ai':
             print("ai mode")
             await self.handle_ai_mode(self.user_id)
+        elif mode == 'local':
+            print("local mode")
+            await self.handle_local_mode(self.user_id)
         else:
             await self.send(json.dumps({'error': 'Invalid game mode'}))
             await self.close()
@@ -459,6 +471,10 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def handle_ai_mode(self, user_id):
         # Logic to handle AI mode
         await room_manager.queue_player(self, game_mode='ai')
+    
+    async def handle_local_mode(self, user_id):
+        # Logic to handle local mode
+        await room_manager.queue_player(self, game_mode='local')
 
     async def disconnect(self, close_code):
         if hasattr(self, 'game_room'):
@@ -551,3 +567,84 @@ class AIGameRoom(GameRoom):
         await self.players[0].send(json.dumps(start_message))
         asyncio.create_task(self.game_loop())
         asyncio.create_task(self.ai_player.move_ai_paddle())
+
+class LocalGameRoom(GameRoom):
+    def __init__(self):
+        super().__init__()
+    
+    async def add_player_local(self, player):
+        self.players.append(player)
+        player.game_room = self
+
+        # Fetch user asynchronously
+        player.user = await database_sync_to_async(User.objects.get)(id=player.user_id)
+
+        if not player.user.is_authenticated:
+            await player.send(json.dumps({'error': 'Unauthorized'}))
+            return
+        
+        player.player_number = 'player1'
+        await player.send(json.dumps({'type': 'setup', 'player_number': player.player_number}))
+
+        print("starting local game")
+        await self.start_local_game()
+
+    async def end_game(self, winner_identifier):
+        self.game_active = False
+
+        message = 'Player 1 wins!' if winner_identifier == 'player1' else 'Player 2 wins!'
+        await self.players[0].send(json.dumps({'type': 'game_over', 'message': message}))
+
+        # only if we want to update player history
+        # date = datetime.now().isoformat()
+        # result = 'player1 won' if winner_identifier == 'player1' else 'player2 won'
+        # winner = self.players[0].user.username if winner_identifier == 'player1' else 'player2'
+        # loser = 'player2' if winner_identifier == 'player1' else self.players[0].user.username
+        # player_details = {'result': result, 'mode': 'ai', 'date': date, 'winner': winner, 'loser': loser}
+        # await update_match_history(self.players[0].user, player_details)
+
+        if self.players[0].user_id in RoomManager.active_connections:
+            RoomManager.active_connections.pop(self.players[0].user_id, None)
+            try:
+                await self.players[0].close()
+            except Exception as e:
+                print(f"Failed to close connection: {e}")
+    
+    def check_score(self, player):
+        if self.score[player] >= 5:
+            asyncio.create_task(self.end_game(player))
+    
+    async def start_local_game(self):
+        # Send a countdown before the game starts
+        for i in range(3, 0, -1):
+            countdown_message = {'type': 'notify', 'message': f'Game starts in {i}...'}
+            print(countdown_message)
+            await self.players[0].send(json.dumps(countdown_message))
+            await asyncio.sleep(1)
+        
+        self.game_active = True
+        start_message = {'type': 'notify', 'message': 'Game is starting!'}
+        await self.players[0].send(json.dumps(start_message))
+        asyncio.create_task(self.game_loop())
+    
+    async def move_paddle(self, player, direction):
+        # Ensure position is within the game boundaries
+        max_height = 100
+        paddle_height = 15
+        min_position = 1
+        max_position = max_height - paddle_height
+        per_move = 10
+        
+        player_number = 'player2' if direction == 'up' or direction == 'down' else 'player1'
+        position = self.paddle_positions[player_number]
+        if direction == 'up':
+            position -= per_move
+        elif direction == 'down':
+            position += per_move
+        elif direction == 'w':
+            position -= per_move
+        elif direction == 's':
+            position += per_move
+        
+        new_position = max(min_position, min(position, max_position))
+        self.paddle_positions[player_number] = new_position
