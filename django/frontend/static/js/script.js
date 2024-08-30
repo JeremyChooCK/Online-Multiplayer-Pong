@@ -270,28 +270,50 @@ function redirectToOAuthProvider() {
 
 async function loadProfile(user_id) {
     token = localStorage.getItem("accessToken");
-    user_id = jwt_decode(token).user_id;
     document.getElementById("profile_settings").style.display = '';
+    document.getElementById("pongGame").style.display = 'none';
     const userData = await fetchUserData(user_id);
+    let wins = 0;
+    let losses = 0;
     if(userData){
-        document.getElementById("profile_page_pic").src = userData.profile.profile_picture;
-        document.getElementById("profile_settings_name").textContent = userData.username;
-        document.getElementById("profile_wins").textContent = userData.profile.wins;
-        document.getElementById("profile_losses").textContent = userData.profile.losses;
-        document.getElementById("profile_name").textContent = userData.username;
-
         const matchHistoryBody = document.getElementById("match_history_body");
         matchHistoryBody.innerHTML = ''; // Clear existing rows
 
         userData.profile.match_history.forEach((match) => {
-            let row = document.createElement("tr");
-            let date = document.createElement("td");
-            let result = document.createElement("td");
-            date.textContent = match.date;
-            result.textContent = match.result || match.loser;
-            row.appendChild(date);
-            row.appendChild(result);
-            matchHistoryBody.appendChild(row);
+            if (!match.date || !match.result) return;
+            else if (match.mode === '1v1'){}
+            else if (match.mode === 'tournament'){
+                let row = document.createElement("tr");
+                let date = document.createElement("td");
+                let time = document.createElement("td");
+                let mode = document.createElement("td");
+                let positions = document.createElement("td");
+                date.textContent = formatDate(match.date);
+                time.textContent = formatTime(match.date);
+                function formatDate(dateString) {
+                    const date = new Date(dateString);
+                    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+                    return date.toLocaleDateString('en-US', options);
+                }
+
+                function formatTime(dateString) {
+                    const date = new Date(dateString);
+                    const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                    return date.toLocaleTimeString('en-US', options);
+                }
+                mode.textContent = match.mode;
+                if (match.result.first === userData.username) {
+                    wins += 1;
+                } else {
+                    losses += 1;
+                }
+                positions.textContent = "1st: " + match.result.first + " 2nd: " + match.result.second + " 3rd: " + match.result.third + " 4th: " + match.result.fourth;
+                row.appendChild(date);
+                row.appendChild(time);
+                row.appendChild(mode);
+                row.appendChild(positions);
+                matchHistoryBody.appendChild(row);
+            }
         });
 
         // Make the match history scrollable if there are more than 5 entries
@@ -300,6 +322,12 @@ async function loadProfile(user_id) {
         } else {
             matchHistoryBody.classList.remove("scrollable-table");
         }
+        document.getElementById("profile_page_pic").src = userData.profile.profile_picture;
+        document.getElementById("profile_settings_name").textContent = userData.username;
+        document.getElementById("profile_wins").textContent = wins;
+        document.getElementById("profile_losses").textContent = losses;
+        document.getElementById("profile_name").textContent = userData.username;
+
     }
 }
 

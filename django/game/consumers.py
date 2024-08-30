@@ -9,8 +9,9 @@ from urllib.parse import parse_qs
 from django.contrib.auth.models import User
 from channels.db import database_sync_to_async
 from authentication.models import UserProfile
-from datetime import datetime
 import websockets
+import pytz
+from datetime import datetime
 
 class BotPlayer:
     def __init__(self):
@@ -159,6 +160,7 @@ class GameRoom:
             await winner.send(json.dumps({'type': 'notify', 'message': 'You have won the match!, waiting for other matches to finish...'}))
             await loser.send(json.dumps({'type': 'notify', 'message': 'You have been eliminated, waiting for other matches to finish...'}))
             await room_manager.handle_semi_final_end(self, winner)
+            return
         elif self == room_manager.final_room:
             await room_manager.handle_final_end(winner)
         elif self == room_manager.third_place_room:
@@ -240,6 +242,8 @@ class RoomManager:
         self.final_room = None
         self.third_place_room = None  # Room for third place match
         self.semi_final_losers = []  # List to keep track of the losers of the semi-finals
+        self.tournament_active = False
+        self.tournament_players = {}
 
     async def queue_player(self, player, game_mode):
         print(f'Player {player.user_id} queued for {game_mode}')
@@ -253,11 +257,17 @@ class RoomManager:
                 await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for an opponent...'}))
 
         elif game_mode == 'tournament':
+            if self.tournament_active:
+                await player.send(json.dumps({'type': 'notify', 'message': 'A tournament is already in progress. Please wait.'}))
+                RoomManager.active_connections.pop(player.user_id, None)
+                await player.close()
+                return
             self.waiting_players_tournament.append(player)
             for player in self.waiting_players_tournament:
                 await player.send(json.dumps({'type': 'notify', 'message': f'Waiting for {4 - len(self.waiting_players_tournament)} more players...'}))
             if len(self.waiting_players_tournament) == 4:  # Start tournament when 4 players are ready
                 # Create two rooms for semi-finals
+                self.tournament_active = True
                 print('Tournament started!')
                 semi_final_1 = self.create_room()
                 semi_final_2 = self.create_room()
@@ -323,15 +333,26 @@ class RoomManager:
         loser = next((player for player in self.final_room.players if player != winner), None)
         
         # Update match histories
-        date = datetime.now().isoformat()
-        winner_details = {'result': 'lost', 'position': 1, 'mode' : 'tournament', 'date' : date}
-        loser_details = {'result': 'lost', 'position': 2, 'mode' : 'tournament', 'date' : date}
-        await update_match_history(winner.user, winner_details)
-        await update_match_history(loser.user, loser_details)
+        # singapore_tz = pytz.timezone('Asia/Singapore')
+        # singapore_time = datetime.now(singapore_tz).isoformat()
 
-        # Send notifications
-        date = datetime.now().isoformat()
-        print("DATE", date)
+        date = None
+        # winner_details = {'result': 'lost', 'position': 1, 'mode' : 'tournament', 'date' : date}
+        # loser_details = {'result': 'lost', 'position': 2, 'mode' : 'tournament', 'date' : date}
+        # await update_match_history(winner.user, winner_details)
+        # await update_match_history(loser.user, loser_details)
+        self.tournament_players['first'] = winner
+        self.tournament_players['second'] = loser
+        if len(self.tournament_players) == 4:
+            result = {'first': winner.user.username, 'second': loser.user.username, 'third' : self.tournament_players['third'].user.username, 'fourth' : self.tournament_players['fourth'].user.username}
+            # Get the current time in Singapore
+            singapore_tz = pytz.timezone('Asia/Singapore')
+            singapore_time = datetime.now(singapore_tz).isoformat()
+
+            date = singapore_time
+            for player in self.tournament_players.values():
+                await update_match_history(player.user, {'mode': 'tournament', 'date': date, 'result' : result})
+
         winner_msg = {'type': 'notify', 'message': 'Congratulations! You won the tournament!', 'mode' : 'tournament', 'date' : date}
         await winner.send(json.dumps(winner_msg))
         loser_msg = {'type': 'notify', 'message': 'Great effort! You finished 2nd in the tournament!', 'mode' : 'tournament', 'date' : date}
@@ -353,16 +374,31 @@ class RoomManager:
                 print("loser closed")
             except Exception as e:
                 print(f"Failed to close connection: {e}")
+        if self.tournament_active:
+            self.tournament_active = False
 
     async def handle_third_place_end(self, winner):
         loser = next((player for player in self.third_place_room.players if player != winner), None)
         
         # Update match histories
-        date = datetime.now().isoformat()
-        winner_details = {'result': 'lost', 'position': 3,  'mode' : 'tournament', 'date' : date}
-        loser_details = {'result': 'lost', 'position': 4, 'mode' : 'tournament', 'date' : date}
-        await update_match_history(winner.user, winner_details)
-        await update_match_history(loser.user, loser_details)
+        # singapore_tz = pytz.timezone('Asia/Singapore')
+        # singapore_time = datetime.now(singapore_tz).isoformat()
+
+        date = None
+        # winner_details = {'result': 'lost', 'position': 3,  'mode' : 'tournament', 'date' : date}
+        # loser_details = {'result': 'lost', 'position': 4, 'mode' : 'tournament', 'date' : date}
+        # await update_match_history(winner.user, winner_details)
+        # await update_match_history(loser.user, loser_details)
+        self.tournament_players['third'] = winner
+        self.tournament_players['fourth'] = loser
+        if len(self.tournament_players) == 4:
+            result = {'first': self.tournament_players['first'].user.username, 'second': self.tournament_players['second'].user.username, 'third' : winner.user.username, 'fourth' : loser.user.username}
+            singapore_tz = pytz.timezone('Asia/Singapore')
+            singapore_time = datetime.now(singapore_tz).isoformat()
+
+            date = singapore_time
+            for player in self.tournament_players.values():
+                await update_match_history(player.user, {'mode': 'tournament', 'date': date, 'result' : result})
 
         # Send notifications
         winner_msg = {'type': 'notify', 'message': 'Congratulations! You finished 3rd in the tournament!'}
@@ -387,12 +423,17 @@ class RoomManager:
                 print("loser closed")
             except Exception as e:
                 print(f"Failed to close connection: {e}")
+        if self.tournament_active:
+            self.tournament_active = False
 
     async def handle_one_on_one_end(self, winner, loser):
         print("winner", winner.user.username)
         print("loser", loser.user.username)
         # Update match histories
-        date = datetime.now().isoformat()
+        singapore_tz = pytz.timezone('Asia/Singapore')
+        singapore_time = datetime.now(singapore_tz).isoformat()
+
+        date = singapore_time
         winner_details = {'result': 'won', 'mode' : '1v1', 'date' : date, 'winner' : winner.user.username, 'loser' : loser.user.username}
         loser_details = {'result': 'lost', 'mode' : '1v1', 'date' : date, 'winner' : winner.user.username, 'loser' : loser.user.username}
         await update_match_history(winner.user, winner_details)
@@ -537,7 +578,10 @@ class AIGameRoom(GameRoom):
         message = 'You win!' if winner_identifier == 'player1' else 'You lose!'
         await self.players[0].send(json.dumps({'type': 'game_over', 'message': message}))
 
-        date = datetime.now().isoformat()
+        singapore_tz = pytz.timezone('Asia/Singapore')
+        singapore_time = datetime.now(singapore_tz).isoformat()
+
+        date = singapore_time
         result = 'won' if winner_identifier == 'player1' else 'lost'
         winner = self.players[0].user.username if winner_identifier == 'player1' else 'CPU'
         loser = 'CPU' if winner_identifier == 'player1' else self.players[0].user.username
@@ -596,7 +640,10 @@ class LocalGameRoom(GameRoom):
         await self.players[0].send(json.dumps({'type': 'game_over', 'message': message}))
 
         # only if we want to update player history
-        # date = datetime.now().isoformat()
+        # singapore_tz = pytz.timezone('Asia/Singapore')
+        # singapore_time = datetime.now(singapore_tz).isoformat()
+
+        # date = singapore_time
         # result = 'player1 won' if winner_identifier == 'player1' else 'player2 won'
         # winner = self.players[0].user.username if winner_identifier == 'player1' else 'player2'
         # loser = 'player2' if winner_identifier == 'player1' else self.players[0].user.username

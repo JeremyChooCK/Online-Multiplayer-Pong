@@ -10,3 +10,4 @@ uvicorn[standard]
 Pillow
 channels
 channels-redis
+pytz
