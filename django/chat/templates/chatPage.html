@@ -2,110 +2,7 @@
 <html lang="en">
 <head>
   <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
-  <style>
-    body {
-      background-color: #f7f7f7;
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin: 0;
-    }
-
-    .chat-container {
-      width: 75%;
-      height: 100%;
-      background-color: #fff;
-      border-radius: 10px;
-      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-      display: flex;
-      flex-direction: row;
-    }
-
-    .user-list {
-      width: 25%;
-      height: 100%;
-      background-color: #f1f1f1;
-      border-radius: 10px 0 0 10px;
-      padding: 10px;
-      overflow-y: auto;
-    }
-
-    .user-list div {
-      cursor: pointer;
-      padding: 5px;
-      margin: 2px;
-      border-radius: 2px;
-      transition: background-color 0.1s;
-    }
-
-    .user-list div:hover {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .user-list div.selected {
-      background-color: #007bff;
-      color: white;
-    }
-
-    .chat-section {
-      width: 75%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .chat-messages {
-      flex-grow: 1;
-      padding: 15px;
-      overflow-y: auto;
-      display: none;
-      flex-direction: column;
-    }
-
-    .chat-message {
-      margin-bottom: 15px;
-      max-width: 80%;
-      padding: 10px 15px;
-      border-radius: 10px;
-      background-color: #e9ecef;
-      align-self: flex-start;
-      position: relative;
-      color: black;
-    }
-
-    .chat-message.sent {
-      background-color: #007bff;
-      color: white;
-      align-self: flex-end;
-      text-align: left;
-    }
-
-    .timestamp {
-      font-size: 8px;
-      color: #999;
-      right: 10px;
-      text-align: right;
-    }
-
-    .timestamp.sent {
-      color: #d4d4d4;
-    }
-
-    .chat-input-container input:focus,
-    .chat-input-container button:focus {
-      outline: none;
-      box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-    }
-
-    .user-list-header {
-      margin-top: 10px;
-      color: black;
-      padding-bottom: 10px; 
-      {% comment %} border-bottom: 1px solid #ddd; {% endcomment %}
-    }
-  </style>
+  <link rel="stylesheet" href="../static/css/chatPage.css" />
 </head>
 <body>
   <div class="chat-container">
@@ -134,6 +31,6 @@
     </div>
   </div>
 
-  <script src="../static/js/chatScript.js"></script>
+  <script src="../static/js/chatPage.js"></script>
 </body>
 </html>

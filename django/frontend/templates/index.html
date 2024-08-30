@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="../static/css/style.css">
     <link rel="stylesheet" href="../static/css/game.css">
+    <link rel="stylesheet" href="../static/css/chatPage.css">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" role="navigation">
@@ -130,24 +131,56 @@
             </div>
         </div>
         <!-- New table ends here -->
-    </div>    
-    <div id="pongGame">
-        <div id="paddle1" class="paddle"></div>
-        <div id="paddle2" class="paddle"></div>
-        <div id="ball"></div>
-        <button id="joinButton">Join Tournament</button>
-        <button id="oneOnOneButton">1v1</button>
-        <button id="oneAiButton">1vBot</button>
-        <button id="localButton">1v1Lan</button>
-        <div id="messageBox"></div>
-        <div id="score">
-            Player 1: <span id="player1Score">0</span>
-            Player 2: <span id="player2Score">0</span>
-        </div>
     </div>
+
+
+        <div id="pongGame">
+            <div id="paddle1" class="paddle"></div>
+            <div id="paddle2" class="paddle"></div>
+            <div id="ball"></div>
+            <button id="joinButton">Join Tournament</button>
+            <button id="oneOnOneButton">1v1</button>
+            <button id="oneAiButton">1vBot</button>
+            <button id="localButton">1v1Lan</button>
+            <div id="messageBox"></div>
+            <div id="score">
+                Player 1: <span id="player1Score">0</span>
+                Player 2: <span id="player2Score">0</span>
+            </div>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-container">
+            <div class="user-list" id="usernames">
+                <h5 class="user-list-header">Chats</h5>
+                <!-- Usernames will be added here -->
+            </div>
+            <div class="chat-section d-flex flex-column">
+                <div class="chat-header bg-primary text-white text-center p-3 d-none justify-content-between align-items-center" id="chat-header">
+                <h1 class="h5 m-0" id="chat-header-text"></h1>
+                <button class="btn btn-success" id="invite-button">Invite Player to Game</button>
+                <button class="btn btn-danger" id="block-button">Click to Block</button>
+                </div>
+                <!-- Chat messages for each user will be dynamically added here -->
+                <div class="chat-input-container d-none p-3 border-top" id="chat-input-container">
+                <input
+                    type="text"
+                    class="form-control mr-2"
+                    id="id_message_send_input"
+                    placeholder="Type your message..."
+                />
+                <button type="submit" class="btn btn-primary" id="id_message_send_button">
+                    Send
+                </button>
+                </div>
+            </div>
+        </div>
+        
+
     <div id="winMessage"></div>
     <script src="../static/js/game.js"></script>
     <script src="../static/js/script.js"></script>
+    <script src="../static/js/chatPage.js"></script>
     <!-- Link to jQuery -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <!-- Link to Popper.js -->
