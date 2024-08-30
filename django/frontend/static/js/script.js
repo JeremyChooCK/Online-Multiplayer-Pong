@@ -281,7 +281,37 @@ async function loadProfile(user_id) {
 
         userData.profile.match_history.forEach((match) => {
             if (!match.date || !match.result) return;
-            else if (match.mode === '1v1'){}
+            else if (match.mode === '1v1'){                let row = document.createElement("tr");
+                let date = document.createElement("td");
+                let time = document.createElement("td");
+                let mode = document.createElement("td");
+                let positions = document.createElement("td");
+                date.textContent = formatDate(match.date);
+                time.textContent = formatTime(match.date);
+                function formatDate(dateString) {
+                    const date = new Date(dateString);
+                    const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+                    return date.toLocaleDateString('en-US', options);
+                }
+
+                function formatTime(dateString) {
+                    const date = new Date(dateString);
+                    const options = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+                    return date.toLocaleTimeString('en-US', options);
+                }
+                mode.textContent = match.mode;
+                if (match.result.first === userData.username) {
+                    wins += 1;
+                } else {
+                    losses += 1;
+                }
+                positions.textContent = "winner: " + match.result.winner + " loser: " + match.result.loser + " 3rd: ";
+                row.appendChild(date);
+                row.appendChild(time);
+                row.appendChild(mode);
+                row.appendChild(positions);
+                matchHistoryBody.appendChild(row);
+            }
             else if (match.mode === 'tournament'){
                 let row = document.createElement("tr");
                 let date = document.createElement("td");
@@ -469,4 +499,18 @@ function getCookie(name) {
     let value = `; ${document.cookie}`;
     let parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop().split(';').shift();
+}
+
+function getUserIdPairs(){
+    let token = localStorage.getItem("accessToken");
+    fetch(ip + "auth/user_id_pairs", {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + token,
+        },
+    }).then(response => response.json())
+    .then(data => {
+        console.log(data);
+    });
 }

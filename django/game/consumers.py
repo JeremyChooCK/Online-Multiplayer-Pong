@@ -248,13 +248,14 @@ class RoomManager:
     async def queue_player(self, player, game_mode):
         print(f'Player {player.user_id} queued for {game_mode}')
         if game_mode == 'one_on_one':
-            if self.waiting_players_one_on_one:
-                room = self.create_room()
-                await room.add_player(player)
-                await room.add_player(self.waiting_players_one_on_one.pop(0))
-            else:
-                self.waiting_players_one_on_one.append(player)
-                await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for an opponent...'}))
+            # if self.waiting_players_one_on_one:
+            #     room = self.create_room()
+            #     await room.add_player(player)
+            #     await room.add_player(self.waiting_players_one_on_one.pop(0))
+            # else:
+            self.waiting_players_one_on_one.append(player)
+            await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for opponent...'}))
+            #make a post request to get user id pairs then scan through the list to find a match for both players
 
         elif game_mode == 'tournament':
             if self.tournament_active:
