@@ -71,6 +71,7 @@ async function updateUIOnLogin() {
         document.getElementById("profile_pic").src = userData.profile.profile_picture;
         document.getElementById("usernameDisplay").textContent = userData.username;
     }
+    initializeChatPage();
 }
 
 async function handleLoggedOutState() {
@@ -79,8 +80,7 @@ async function handleLoggedOutState() {
     const refreshToken = localStorage.getItem("refreshToken");
 
     if (accessToken || refreshToken) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
+        localStorage.clear();
         window.location.reload();
     }
     document.getElementById("usernameDisplay").textContent = '';
@@ -116,7 +116,7 @@ async function postLogin() {
         localStorage.setItem("refreshToken", data.refresh);
         // Update UI after login
         updateUIOnLogin();
-        window.location.reload(); 
+        // window.location.reload();
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
@@ -148,6 +148,7 @@ async function loginAfterRegister(username, password) {
 
         // Update UI after login
         updateUIOnLogin();
+        window.location.reload(); 
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
@@ -522,6 +523,6 @@ function getUserIdPairs(){
         },
     }).then(response => response.json())
     .then(data => {
-        console.log(data);
+        console.log("getUserIDPairs:", data);
     });
 }

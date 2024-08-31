@@ -20,7 +20,8 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
         text_data_json = json.loads(text_data)
         
         if text_data_json['type'] == 'createIndivialRoom':
-            self.indivialRoom = text_data_json['content']
+            self.indivialRoom = text_data_json['userID']
+            self.username = text_data_json['username']
             self.allUsersRoom = "allUsers"
             await self.channel_layer.group_add(
                 self.indivialRoom,
@@ -37,7 +38,8 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
                     "type": "sendMessage",
                     "purpose": "requestStatus",
                     "message": "online",
-                    "username": self.indivialRoom,
+                    "userID": self.indivialRoom,
+                    "userName": self.username,
                 }
             )
             
@@ -48,7 +50,8 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
                     "type": "sendMessage",
                     "purpose": "updateStatus",
                     "message": "online",
-                    "username": self.indivialRoom,
+                    "userID": self.indivialRoom,
+                    "userName": self.username,
                 }
             )
 
@@ -60,7 +63,8 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
                     "type": "sendMessage",
                     "purpose": "directMessage",
                     "message": message,
-                    "username": self.indivialRoom,
+                    "userID": self.indivialRoom,
+                    "userName": self.username,
                 }
             )
         
@@ -72,13 +76,15 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
                     "type": "sendMessage",
                     "purpose": "directMessage",
                     "message": message,
-                    "username": "pong-bot",
+                    "userID": "0",
+                    "userName": "pong-bot",
                 }
             )
 
     async def sendMessage(self , event) :
         purpose = event["purpose"]
         message = event["message"]
-        sender = event["username"]
-        await self.send(text_data = json.dumps({"purpose":purpose, "message":message ,"sender":sender})) # send is a method id AsyncWebsocketConsumer class
+        senderID = event["userID"]
+        senderName = event["userName"]
+        await self.send(text_data = json.dumps({"purpose":purpose, "message":message ,"senderID":senderID, "senderName": senderName})) # send is a method id AsyncWebsocketConsumer class
       
