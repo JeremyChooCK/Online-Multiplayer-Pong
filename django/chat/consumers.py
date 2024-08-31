@@ -67,7 +67,20 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
                     "userName": self.username,
                 }
             )
-        
+
+        if text_data_json['type'] == 'sendInviteInfo':
+            message = text_data_json["message"]
+            recipient_id = text_data_json["recipient_id"]
+            await self.channel_layer.group_send( #triggers sendMessage method to everyone less the reciever (which is the sender itself)
+                recipient_id, {
+                    "type": "sendMessage",
+                    "purpose": message,
+                    "message": message,
+                    "userID": self.indivialRoom,
+                    "userName": self.username,
+                }
+            )
+            
         if text_data_json['type'] == 'sendSystemMessage':
             message = text_data_json["message"]
             recipient_id = text_data_json["recipient_id"]

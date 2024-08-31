@@ -82,6 +82,7 @@ function handleChatTargetClick (chatTarget, userID, username) {
   const chatHeaderText = document.getElementById('chat-header-text');
   const chatInput = document.getElementById('chat-input-container');
   const blockButton = document.getElementById('block-button');
+  const inviteButton = document.getElementById('invite-button');
 
   chatTarget.onclick = () => {
     recipientId = userID;
@@ -108,6 +109,18 @@ function handleChatTargetClick (chatTarget, userID, username) {
       blockButton.textContent = 'Click to Unblock';
     } else{
       blockButton.textContent = 'Click to Block';
+    }
+
+    // set invite button text based on inviteArray.
+    if (sendInviteArray.includes(userID)) {
+      inviteButton.textContent = 'Invited. Click to cancel';
+    }
+    else
+      inviteButton.textContent = 'Invite Player to Game';
+
+
+    if (recieveInviteArray.includes(userID)) {
+      inviteButton.textContent = 'Accept invite';
     }
 
     // reset unread counter
@@ -148,6 +161,8 @@ function handleChatTargetClick (chatTarget, userID, username) {
 
 
 let blockArray = [];
+let sendInviteArray = [];
+let recieveInviteArray = [];
 let recipientId;
 let allUsers;
 let allUsersStatus = {};
@@ -412,6 +427,22 @@ function initializeChatPage() {
       allUsersStatus[data.senderID] = true; // Change the status icon to a green circle emoji
     };
     
+    if (data.purpose === 'InviteForGame' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
+      recieveInviteArray.push(data.senderID);
+      if (data.senderID === recipientId) {
+        inviteButton.textContent = 'Accept invite';
+      }
+    }
+
+    if (data.purpose === 'CancelInvite' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
+      recieveInviteArray.splice(recieveInviteArray.indexOf(data.senderID), 1);
+      if (data.senderID === recipientId) {
+        inviteButton.textContent = 'Invite Player to Game';
+      }
+    }
+
+
+
   };
 
   // STATUS UPDATE VIA PINGING
@@ -442,5 +473,56 @@ function initializeChatPage() {
       }
     }
   }, 7000);
+
+
+  let ongoingGame = 0;
+  const inviteButton = document.getElementById('invite-button');
+
+  // INVITE PLAYER TO GAME
+  document.querySelector("#invite-button").onclick = function (e) {
+
+    if (!recipientId) {
+      console.log("No recipient selected");
+      return;
+    }
+    if (ongoingGame == 1) {
+      return;
+    }
+
+    if (recieveInviteArray.includes(recipientId)) {
+      showToast('LETSGO!');
+      ongoingGame = 1;
+    }
+    else if (sendInviteArray.includes(recipientId)) {
+      sendInviteArray.splice(sendInviteArray.indexOf(recipientId), 1);
+      inviteButton.textContent = 'Invite Player to Game';
+      chatSocket.send(
+        JSON.stringify({
+          type: "sendInviteInfo",
+          message: "CancelInvite",
+          recipient_id: recipientId,
+        })
+      );
+    }
+    else {
+      sendInviteArray.push(recipientId);
+      inviteButton.textContent = 'Invited. Click to cancel';
+      chatSocket.send(
+        JSON.stringify({
+          type: "sendSystemMessage",
+          message: `You are invited to play a game with ${allUsers[recipientId]}! Accept the invite at ${allUsers[recipientId]} chat.`,
+          recipient_id: recipientId,
+        })
+      );
+      chatSocket.send(
+        JSON.stringify({
+          type: "sendInviteInfo",
+          message: "InviteForGame",
+          recipient_id: recipientId,
+        })
+      );
+    }
+
+  };
+
 };
-  
