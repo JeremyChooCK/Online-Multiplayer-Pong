@@ -9,8 +9,8 @@ def chatPage(request, *args, **kwargs):
     context = {}
     return render(request, "chatPage.html", context)
 
-# @api_view(['GET'])
-# @permission_classes([IsAuthenticated])
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
 def get_all_usernames(request):
     usernames = User.objects.values_list('username', flat=True)
     return JsonResponse(list(usernames), safe=False)

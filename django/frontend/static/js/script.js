@@ -75,8 +75,14 @@ async function updateUIOnLogin() {
 
 async function handleLoggedOutState() {
     console.log("Logged out")
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
+    const accessToken = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (accessToken || refreshToken) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        window.location.reload();
+    }
     document.getElementById("usernameDisplay").textContent = '';
     document.getElementById("welcomeSection").style.display = 'none';
     document.getElementById("loginButton").style.display = '';
@@ -108,9 +114,9 @@ async function postLogin() {
         const data = await response.json();
         localStorage.setItem("accessToken", data.access);
         localStorage.setItem("refreshToken", data.refresh);
-
         // Update UI after login
         updateUIOnLogin();
+        window.location.reload(); 
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
