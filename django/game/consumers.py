@@ -235,7 +235,7 @@ class RoomManager:
     active_connections = {}
     def __init__(self):
         self.rooms = {}
-        self.waiting_players_one_on_one = []
+        self.waiting_players_one_on_one = {}
         self.waiting_players_tournament = []
         self.tournament_rooms = []
         self.ai_rooms = {}
@@ -245,16 +245,36 @@ class RoomManager:
         self.tournament_active = False
         self.tournament_players = {}
 
-    async def queue_player(self, player, game_mode):
+    async def queue_player(self, player, game_mode, userid=None, opponentid=None):
         print(f'Player {player.user_id} queued for {game_mode}')
         if game_mode == 'one_on_one':
+            pid = str(player.user_id)
+            if pid != userid:
+                await player.send(json.dumps({'type': 'notify', 'message': 'userid and user_id mismatch'}))
+                RoomManager.active_connections.pop(player.user_id, None)
+                await player.close()
+                return
+            if pid in self.waiting_players_one_on_one.keys():
+                # check if opponent is waiting to play against self
+                if opponentid == str(self.waiting_players_one_on_one[pid].user_id):
+                    room = self.create_room()
+                    await room.add_player(player)
+                    await room.add_player(self.waiting_players_one_on_one.pop(pid))
+                else:
+                    await player.send(json.dumps({'type': 'notify', 'message': 'Opponent not found'}))
+                    RoomManager.active_connections.pop(player.user_id, None)
+                    await player.close()
+                    return
+            else:
+                self.waiting_players_one_on_one[opponentid] = player
+                await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for opponent...'}))
             # if self.waiting_players_one_on_one:
             #     room = self.create_room()
             #     await room.add_player(player)
             #     await room.add_player(self.waiting_players_one_on_one.pop(0))
             # else:
-            self.waiting_players_one_on_one.append(player)
-            await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for opponent...'}))
+            # self.waiting_players_one_on_one.append(player)
+            # await player.send(json.dumps({'type': 'notify', 'message': 'Waiting for opponent...'}))
             #make a post request to get user id pairs then scan through the list to find a match for both players
 
         elif game_mode == 'tournament':
@@ -495,7 +515,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         if mode == 'tournament':
             await self.handle_tournament_mode(self.user_id)
         elif mode == 'one_on_one':
-            await self.handle_one_on_one_mode(self.user_id)
+            await self.handle_one_on_one_mode(self.user_id, userid, opponentid)
         elif mode == 'ai':
             print("ai mode")
             await self.handle_ai_mode(self.user_id)
@@ -510,9 +530,9 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         # Logic to handle tournament mode
         await room_manager.queue_player(self, game_mode='tournament')
 
-    async def handle_one_on_one_mode(self, user_id):
+    async def handle_one_on_one_mode(self, user_id, userid, opponentid):
         # Logic to handle one on one mode
-        await room_manager.queue_player(self, game_mode='one_on_one')
+        await room_manager.queue_player(self, game_mode='one_on_one', userid=userid, opponentid=opponentid)
 
     async def handle_ai_mode(self, user_id):
         # Logic to handle AI mode
