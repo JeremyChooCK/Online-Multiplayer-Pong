@@ -21,7 +21,8 @@ joinButton.addEventListener('click', async function() {
     startGame(url);
 });
 
-oneOnOneButton.addEventListener('click', async function() {
+// oneOnOneButton.addEventListener('click', async function() {
+function playOneOnOne() {
     const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
     if (!token) {
         messageBox.innerText = "You are not logged in.";
@@ -29,9 +30,10 @@ oneOnOneButton.addEventListener('click', async function() {
     }
     let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one`;
     startGame(url);
-});
+};
 
-oneAiButton.addEventListener('click', async function() {
+// oneAiButton.addEventListener('click', async function() {
+function playAI() {
     const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
     if (!token) {
         messageBox.innerText = "You are not logged in.";
@@ -39,7 +41,7 @@ oneAiButton.addEventListener('click', async function() {
     }
     let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=ai`;
     startGame(url);
-});
+};
 
 localButton.addEventListener('click', async function() {
     const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
@@ -74,6 +76,9 @@ function startGame(url) {
             messageBox.innerText = data.message;
         } else if (data.type === 'game_over') {
             messageBox.innerText = data.message;
+            ongoingGame = false;
+            const inviteButton = document.getElementById('invite-button');
+            inviteButton.style.display = 'block';
         } if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
             ball.style.top = `${data.ball_position.y}%`;

@@ -1,10 +1,3 @@
-// 1) create channel table. table will have channel name, owner, admin and user, ban list, mute list,
-// 2) create API to get channel details
-// 3) create API to post and change settings (back end check for rights)
-// 4) create a websocket to update all users of setting changes
-// 5) list channels in the chat page. joined and unjoined channels
-// 6) do front end 
-// 7) check jwt for all api calls 
 
 function showToast(message, duration = 3000) {
   // Create a div element for the toast message
@@ -29,7 +22,7 @@ function showToast(message, duration = 3000) {
   // Fade in the toast message
   setTimeout(() => {
       toast.style.opacity = '1';
-  }, 0);
+  }, 100); // This should match the duration of the transition
 
   // Fade out and remove the toast message after a certain amount of time
   setTimeout(() => {
@@ -159,7 +152,17 @@ function handleChatTargetClick (chatTarget, userID, username) {
   };
 }
 
+function getTimeStamp(date) {
+  const day = date.toLocaleString('en-US', { weekday: 'short' });
+  const month = date.toLocaleString('en-US', { month: 'short' });
+  const dayOfMonth = date.getDate().toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hours = date.getHours().toString().padStart(2, '0');
+  const minutes = date.getMinutes().toString().padStart(2, '0');
+  return `${dayOfMonth} ${month} ${year}, ${day} | ${hours}:${minutes}`;
+}
 
+let ongoingGame = false;
 let blockArray = [];
 let sendInviteArray = [];
 let recieveInviteArray = [];
@@ -247,17 +250,6 @@ function initializeChatPage() {
 
   // CHAT SOCKET
   const chatSocket = new WebSocket("wss://" + window.location.host + "/ws/chat/");
-  function getTimeStamp(date) {
-    const day = date.toLocaleString('en-US', { weekday: 'short' });
-    const month = date.toLocaleString('en-US', { month: 'short' });
-    const dayOfMonth = date.getDate().toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    return `${dayOfMonth} ${month} ${year}, ${day} | ${hours}:${minutes}`;
-  }
-
-
 
   // open socket
   chatSocket.onopen = function (e) {
@@ -402,7 +394,6 @@ function initializeChatPage() {
         }
       }
 
-
       // update allUsersStatus in to catch the 2 second deta between ping and statusupdate
       allUsersStatus[data.senderID] = true;
       // response alive to sender
@@ -427,6 +418,7 @@ function initializeChatPage() {
       allUsersStatus[data.senderID] = true; // Change the status icon to a green circle emoji
     };
     
+    // Receieve Invite for game
     if (data.purpose === 'InviteForGame' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
       recieveInviteArray.push(data.senderID);
       if (data.senderID === recipientId) {
@@ -434,6 +426,7 @@ function initializeChatPage() {
       }
     }
 
+    // Recieve Cancel Invite
     if (data.purpose === 'CancelInvite' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
       recieveInviteArray.splice(recieveInviteArray.indexOf(data.senderID), 1);
       if (data.senderID === recipientId) {
@@ -441,6 +434,14 @@ function initializeChatPage() {
       }
     }
 
+    // Recieve Accept Invite
+    if (data.purpose === 'AcceptInvite' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
+      showToast(`Pong Game with ${data.senderName}!`, 5000);
+      playOneOnOne();
+      inviteButton.style.display = 'none';
+      ongoingGame = true;
+
+    }
 
 
   };
@@ -475,24 +476,38 @@ function initializeChatPage() {
   }, 7000);
 
 
-  let ongoingGame = 0;
   const inviteButton = document.getElementById('invite-button');
 
   // INVITE PLAYER TO GAME
-  document.querySelector("#invite-button").onclick = function (e) {
 
+  // on click of invite button
+  document.querySelector("#invite-button").onclick = function (e) {
+    // error
     if (!recipientId) {
       console.log("No recipient selected");
       return;
     }
-    if (ongoingGame == 1) {
+    // not allow any invite if game is ongoing or any other condition we want to set.
+    if (ongoingGame == true) {
       return;
     }
 
+    // SCENARIOS on clicking of invite button
+
+    // First: user accept invite from other user
     if (recieveInviteArray.includes(recipientId)) {
-      showToast('LETSGO!');
-      ongoingGame = 1;
+      chatSocket.send(
+        JSON.stringify({
+          type: "sendInviteInfo",
+          message: "AcceptInvite",
+          recipient_id: recipientId,
+        })
+      );
+      showToast(`Pong Game with ${allUsers[recipientId]}!`, 5000);
+      playOneOnOne();
+      inviteButton.style.display = 'none';
     }
+    // Second: user cancel invite from other users
     else if (sendInviteArray.includes(recipientId)) {
       sendInviteArray.splice(sendInviteArray.indexOf(recipientId), 1);
       inviteButton.textContent = 'Invite Player to Game';
@@ -504,9 +519,18 @@ function initializeChatPage() {
         })
       );
     }
+    // Third: play with pong-bot
+    else if (recipientId === '0') {
+      showToast(`Pong Game with pong-bot!`, 5000);
+      ongoingGame = true;
+      playAI();
+      inviteButton.style.display = 'none';
+    }
+    // Forth: user click to send invite to other user
     else {
       sendInviteArray.push(recipientId);
       inviteButton.textContent = 'Invited. Click to cancel';
+      // send system notification
       chatSocket.send(
         JSON.stringify({
           type: "sendSystemMessage",
@@ -514,6 +538,7 @@ function initializeChatPage() {
           recipient_id: recipientId,
         })
       );
+      // send invite info via web socket
       chatSocket.send(
         JSON.stringify({
           type: "sendInviteInfo",
