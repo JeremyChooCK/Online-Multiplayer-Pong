@@ -179,6 +179,7 @@ function initializeChatPage() {
   const chatInput = document.getElementById('chat-input-container');
   const blockButton = document.getElementById('block-button');
   let currentUserName = localStorage.getItem('username');
+
   let currentUserID = String(jwt_decode(token).user_id);
 
   // Initial fetch to get all users
@@ -262,7 +263,6 @@ function initializeChatPage() {
       profileDiv.style.display = 'none';
       profileEditName.style.display = '';
     }
-
   });
 
   // CHAT SOCKET
@@ -460,6 +460,7 @@ function initializeChatPage() {
           messageBox.innerText = "You are not logged in.";
           return;
       }
+      sendInviteArray.splice(sendInviteArray.indexOf(data.senderID), 1);
       let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one&userid=${currentUserID}&opponentid=${data.senderID}`;
       startGame(url);
 
@@ -526,7 +527,7 @@ function initializeChatPage() {
         })
       );
       showToast(`Pong Game with ${allUsers[recipientId]}!`, 5000);
-      
+      recieveInviteArray.splice(recieveInviteArray.indexOf(recipientId), 1);
       const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
       if (!token) {
           messageBox.innerText = "You are not logged in.";

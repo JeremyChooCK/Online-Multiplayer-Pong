@@ -443,16 +443,35 @@ async function updateUserName(newUsername, token) {  // Added token parameter
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('profile_page_pic').addEventListener('click', function() {
-        document.getElementById('profile_page_pic_input').click();
+        const profileName = document.getElementById('profile_name').textContent;
+        const token = localStorage.getItem("accessToken");
+        const userid = jwt_decode(token).user_id;
+        const currUserName = allUsers[userid];
+        // Only allow the user to change their own profile picture
+        if (currUserName === profileName) {
+            document.getElementById('profile_page_pic_input').click();
+        }
     });
 });
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('profile_pic').addEventListener('click', function() {
-        token = localStorage.getItem("accessToken");
-        user_id = jwt_decode(token).user_id;
-        loadProfile(user_id);
-        console.log("profile pic clicked");
+        const pongGameDiv = document.getElementById('pongGame');
+        const token = localStorage.getItem("accessToken");
+        const userid = jwt_decode(token).user_id;
+        const currUserName = allUsers[userid];
+        const profileDiv = document.getElementById('profile_settings');
+        const profileName = document.getElementById('profile_name').textContent;
+        const profileEditName = document.getElementById('edit_name');
+        if (profileDiv.style.display === 'none' || profileName !== currUserName) {
+            loadProfile(userid);
+            profileEditName.style.display = 'block';
+        }
+        else {
+            pongGameDiv.style.display = 'block'
+            profileDiv.style.display = 'none';
+            profileEditName.style.display = '';
+          }
     });
 });
 

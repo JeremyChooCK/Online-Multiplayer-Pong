@@ -79,6 +79,8 @@ function startGame(url) {
             ongoingGame = false;
             const inviteButton = document.getElementById('invite-button');
             inviteButton.style.display = 'block';
+            inviteButton.textContent = 'Play Again';
+            console.log("Game Over:", data.message);
         } if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
             ball.style.top = `${data.ball_position.y}%`;
