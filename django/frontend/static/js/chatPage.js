@@ -72,7 +72,7 @@ function addUserToChatList(userID, username, chatTarget) {
 // Function to set the onclick for any user in the chat list
 function handleChatTargetClick (chatTarget, userID, username) {
   const chatHeader = document.getElementById('chat-header');
-  const chatHeaderText = document.getElementById('chat-header-text');
+  const chatProfileButton = document.getElementById('chat-profile-button');
   const chatInput = document.getElementById('chat-input-container');
   const blockButton = document.getElementById('block-button');
   const inviteButton = document.getElementById('invite-button');
@@ -86,10 +86,10 @@ function handleChatTargetClick (chatTarget, userID, username) {
     }
     // Select the new user
     chatTarget.classList.add('selected');
-    chatHeaderText.textContent = username;
+    chatProfileButton.textContent = username;
 
     // Show or hide chat-header (bar above chat messages)
-    if (chatHeaderText.textContent.trim() === '') {
+    if (chatProfileButton.textContent.trim() === '') {
       chatHeader.classList.remove('d-flex');
       chatHeader.classList.add('d-none');
     } else {
@@ -175,7 +175,7 @@ function initializeChatPage() {
   console.log('chat page loaded');
   const token = localStorage.getItem("accessToken");
   const usernamesDiv = document.getElementById('usernames');
-  const chatHeaderText = document.getElementById('chat-header-text');
+  const chatProfileButton = document.getElementById('chat-profile-button');
   const chatInput = document.getElementById('chat-input-container');
   const blockButton = document.getElementById('block-button');
   let currentUserName = localStorage.getItem('username');
@@ -217,7 +217,7 @@ function initializeChatPage() {
       blockArray.push(recipientId);
       // change button text
       blockButton.textContent = 'Click to Unblock';
-      chatHeaderText.textContent = allUsers[recipientId] + ' (BLOCKED)';
+      chatProfileButton.textContent = allUsers[recipientId] + ' (BLOCKED)';
       // remove chat input
       chatInput.classList.remove('d-flex');
       chatInput.classList.add('d-none');
@@ -235,7 +235,7 @@ function initializeChatPage() {
       blockArray.splice(indexOfRecipient, 1);
       // change button text
       blockButton.textContent = 'Click to Block';
-      chatHeaderText.textContent = allUsers[recipientId];
+      chatProfileButton.textContent = allUsers[recipientId];
       // remove chat input
       chatInput.classList.remove('d-none');
       chatInput.classList.add('d-flex');
@@ -247,6 +247,23 @@ function initializeChatPage() {
     }
   });
 
+  const pongGameDiv = document.getElementById('pongGame');
+  const profileDiv = document.getElementById('profile_settings');
+  const profileName = document.getElementById('profile_name');
+  const profileEditName = document.getElementById('edit_name');
+  // CHAT PROFILE AND MATCH HISTORY
+  chatProfileButton.addEventListener('click', function() {
+    if (profileDiv.style.display === 'none' || profileName.textContent != allUsers[recipientId]) {
+      loadProfile(recipientId);
+      profileEditName.style.display = 'none';
+    }
+    else {
+      pongGameDiv.style.display = 'block'
+      profileDiv.style.display = 'none';
+      profileEditName.style.display = '';
+    }
+
+  });
 
   // CHAT SOCKET
   const chatSocket = new WebSocket("wss://" + window.location.host + "/ws/chat/");
@@ -435,15 +452,20 @@ function initializeChatPage() {
     }
 
     // Recieve Accept Invite
-    if (data.purpose === 'AcceptInvite' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
+    if (data.purpose === 'AcceptInvite' && !ongoingGame && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
       showToast(`Pong Game with ${data.senderName}!`, 5000);
-      playOneOnOne();
+      
+      const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
+      if (!token) {
+          messageBox.innerText = "You are not logged in.";
+          return;
+      }
+      let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one&userid=${currentUserID}&opponentid=${data.senderID}`;
+      startGame(url);
+
       inviteButton.style.display = 'none';
       ongoingGame = true;
-
     }
-
-
   };
 
   // STATUS UPDATE VIA PINGING
@@ -504,7 +526,16 @@ function initializeChatPage() {
         })
       );
       showToast(`Pong Game with ${allUsers[recipientId]}!`, 5000);
-      playOneOnOne();
+      
+      const token = localStorage.getItem('accessToken'); // Retrieve the token from localStorage
+      if (!token) {
+          messageBox.innerText = "You are not logged in.";
+          return;
+      }
+      let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one&userid=${currentUserID}&opponentid=${recipientId}`;
+      startGame(url);
+
+      
       inviteButton.style.display = 'none';
     }
     // Second: user cancel invite from other users

@@ -289,7 +289,8 @@ async function loadProfile(user_id) {
 
         userData.profile.match_history.forEach((match) => {
             if (!match.date || !match.result) return;
-            else if (match.mode === '1v1'){                let row = document.createElement("tr");
+            else if (match.mode === '1v1') {                
+                let row = document.createElement("tr");
                 let date = document.createElement("td");
                 let time = document.createElement("td");
                 let mode = document.createElement("td");
@@ -451,7 +452,7 @@ document.addEventListener('DOMContentLoaded', function () {
         token = localStorage.getItem("accessToken");
         user_id = jwt_decode(token).user_id;
         loadProfile(user_id);
-        console.log("profiel pic clicked");
+        console.log("profile pic clicked");
     });
 });
 
