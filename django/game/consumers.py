@@ -471,6 +471,10 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         params = parse_qs(query_string)
         token = params.get('token', [None])[0]
         mode = params.get('mode', [None])[0]
+        userid = params.get('userid', [None])[0]
+        opponentid = params.get('opponentid', [None])[0]
+        print(f'userid: {userid}')
+        print(f'opponentid: {opponentid}')
         print(f'mode: {mode}')
         try:
             access_token = AccessToken(token)
