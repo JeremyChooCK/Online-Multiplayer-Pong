@@ -172,22 +172,27 @@ class ChangeProfilePictureView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, *args, **kwargs):
-        print(request.__dict__)
         print("in cpp")
 
         try:
             user_profile = UserProfile.objects.get(user=request.user)
             image_file = request.FILES.get('profile_picture')
+
             if not image_file:
                 return Response({'error': 'No image file provided'}, status=400)
             
-            user_profile.profile_picture.save(image_file.name, image_file)
-            user_profile.save()
+            # Check if the uploaded file is an image
+            if not image_file.content_type.startswith('image/'):
+                return Response({'error': 'File is not an image'}, status=400)
+
+            user_profile.profile_picture.save(image_file.name, image_file, save=True)
             return Response({'message': 'Profile picture updated successfully'}, status=200)
+
         except UserProfile.DoesNotExist:
             return Response({'error': 'UserProfile does not exist'}, status=404)
         except Exception as e:
             return Response({'error': str(e)}, status=500)
+
 class UserIdPairsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

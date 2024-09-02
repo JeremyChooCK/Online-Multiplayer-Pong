@@ -489,44 +489,76 @@ document.getElementById('profile_page_pic_input').addEventListener('change', fun
 });
 
 async function uploadFile(file) {
-    
     try {
+        // Check if the uploaded file is an image
+        if (!file.type.startsWith('image/')) {
+            alert('Only image files are allowed!');
+            console.error('Attempted to upload a non-image file.');
+            return; // Exit the function if the file is not an image
+        }
+
         const formData = new FormData();
         formData.append('profile_picture', file);
+
         const token = localStorage.getItem("accessToken");
-        user_id = jwt_decode(token).user_id;
-        console.log("dsadsadsadsadsadsadsad TOKEN: ", token);
+        if (!token) {
+            console.error('No access token available.');
+            return;
+        }
+        
+        const user_id = jwt_decode(token).user_id;
+        console.log("TOKEN: ", token);
+
         const csrfToken = getCookie('csrftoken'); // Function to get CSRF token from cookies
+        if (!csrfToken) {
+            console.error('No CSRF token found.');
+            return;
+        }
+
         console.log("CSRF Token: ", csrfToken);
+
         const response = await fetch(ip + "auth/edit/picture", {
             method: "POST",
             headers: {
                 'Authorization': `Bearer ${token}`,
                 "X-CSRFToken": csrfToken // Include CSRF token here
-
             },
             body: formData
         });
+
         if (!response.ok) {
             console.log("Response:", response);
             throw new Error('Failed to upload image');
         }
+
         const data = await response.json();
-        console.log('successfully uploaded picture');
-        data = fetchUserData(user_id);
-        console.log("AAAAAAAAAAAAAA", data);
-        document.getElementById("profile_pic").src = data.profile_picture;
-        document.getElementById("profile_page_pic").src = data.profile_picture;
-    }
-    catch (error) {
+        console.log('Successfully uploaded picture');
+
+        // Fetch user data might need to be awaited if it is asynchronous
+        const userData = await fetchUserData(user_id);
+
+        // Update image sources on the page
+        document.getElementById("profile_pic").src = userData.profile.profile_picture;
+        document.getElementById("profile_page_pic").src = userData.profile.profile_picture;
+    } catch (error) {
         console.error('Error:', error);
     }
 }
 
 function getCookie(name) {
-    let value = `; ${document.cookie}`;
-    let parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            // Does this cookie string begin with the name we want?
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 function getUsername() {
