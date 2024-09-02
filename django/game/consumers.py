@@ -233,6 +233,7 @@ class GameRoom:
 
 class RoomManager:
     active_connections = {}
+    TIMEOUT_SECONDS = 10
     def __init__(self):
         self.rooms = {}
         self.waiting_players_one_on_one = {}
@@ -283,10 +284,15 @@ class RoomManager:
                 RoomManager.active_connections.pop(player.user_id, None)
                 await player.close()
                 return
+            
             self.waiting_players_tournament.append(player)
             for player in self.waiting_players_tournament:
                 await player.send(json.dumps({'type': 'notify', 'message': f'Waiting for {4 - len(self.waiting_players_tournament)} more players...'}))
-            if len(self.waiting_players_tournament) == 4:  # Start tournament when 4 players are ready
+            
+            if len(self.waiting_players_tournament) == 1:  # If this is the first player, start a timeout
+                asyncio.create_task(self.check_start_timeout(player))
+
+            if len(self.waiting_players_tournament) == 4:  # Start the tournament
                 # Create two rooms for semi-finals
                 self.tournament_active = True
                 print('Tournament started!')
@@ -323,6 +329,15 @@ class RoomManager:
         room = LocalGameRoom()
         self.rooms[room.room_id] = room
         return room
+    
+    async def check_start_timeout(self, initial_player):
+        await asyncio.sleep(self.TIMEOUT_SECONDS)
+        if not self.tournament_active:  # Check if the tournament has started
+            for player in self.waiting_players_tournament:
+                await player.send(json.dumps({'type': 'notify', 'message': 'Tournament did not start in time, disconnecting.'}))
+                RoomManager.active_connections.pop(player.user_id, None)
+                await player.close()
+            self.waiting_players_tournament.clear()
 
     async def handle_semi_final_end(self, room, winner):
         # Identify the loser in the semi-final room
@@ -342,10 +357,6 @@ class RoomManager:
                 self.third_place_room = self.create_room()
             third_place_player1 = self.semi_final_losers.pop(0)
             third_place_player2 = self.semi_final_losers.pop(0)
-            for i in range(3):
-                await third_place_player1.send(json.dumps({'type': 'notify', 'message': f'You have been eliminated, starting third-place match in {3-i}...'}))
-                await third_place_player2.send(json.dumps({'type': 'notify', 'message': f'You have been eliminated, starting third-place match in {3-i}...'}))
-                await asyncio.sleep(1)
             await self.third_place_room.add_player(third_place_player1)
             await self.third_place_room.add_player(third_place_player2)
 
