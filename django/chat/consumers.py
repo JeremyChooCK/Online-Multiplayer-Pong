@@ -18,10 +18,10 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
 
     async def receive(self, text_data): # receiving what was typed and sent by ownself. script, user use chatSocket.send. then its own server is receiving its own message and processed it.
         text_data_json = json.loads(text_data)
-        
+        self.username = text_data_json['username']
+
         if text_data_json['type'] == 'createIndivialRoom':
             self.indivialRoom = text_data_json['userID']
-            self.username = text_data_json['username']
             self.allUsersRoom = "allUsers"
             await self.channel_layer.group_add(
                 self.indivialRoom,

@@ -55,6 +55,9 @@ localButton.addEventListener('click', async function() {
 
 function startGame(url) {
 
+    const token = localStorage.getItem('accessToken');
+    const user_id = jwt_decode(token).user_id;
+
     console.log("WebSocket URL:", url);
     gameSocket = new WebSocket(url);
 
@@ -65,7 +68,6 @@ function startGame(url) {
     gameSocket.onmessage = function(event) {
         const data = JSON.parse(event.data);
         console.log("Received data:", data.type, data);
-
         // Handle different message types here...
         if (data.type === 'setup') {
             playerNumber = data.player_number;
@@ -74,12 +76,41 @@ function startGame(url) {
         } else if (data.type === 'notify') {
             console.log("Notify:", data.message);
             messageBox.innerText = data.message;
+
+        if (!chatSections["0"]) {
+            const chatMessagesDiv = document.createElement('div');
+            chatMessagesDiv.className = 'chat-messages flex-grow-1 p-3 overflow-auto d-none';
+            chatMessagesDiv.id = `chat-messages-${"0"}`;
+            chatSections["0"] = chatMessagesDiv;
+            document.querySelector('.chat-section').insertBefore(chatMessagesDiv, document.querySelector('.chat-input-container'));
+            }
+            
+            var div = document.createElement("div");
+            div.className = "chat-message";
+            div.innerHTML = `${data.message}`;
+    
+            var timestamp = document.createElement("div");
+            timestamp.className = "timestamp";
+            timestamp.innerHTML = getTimeStamp(new Date());
+            div.appendChild(timestamp);
+    
+            chatSections["0"].appendChild(div);
+            chatSections["0"].scrollTop = chatSections["0"].scrollHeight;
+    
+            const chatTarget = document.getElementById(`chat-target-${"0"}`);
+            if (chatTarget && !chatTarget.classList.contains('selected')) {
+            const unreadCounter = document.getElementById(`unread-counter-${"0"}`);
+            unreadCounter.textContent = Number(unreadCounter.textContent) + 1;
+            unreadCounter.style.display = 'inline';
+            console.log('unread message');
+            }
+
         } else if (data.type === 'game_over') {
             messageBox.innerText = data.message;
             ongoingGame = false;
             const inviteButton = document.getElementById('invite-button');
             inviteButton.style.display = 'block';
-            inviteButton.textContent = 'Play Again';
+            inviteButton.textContent = 'Invite Player to Game';
             console.log("Game Over:", data.message);
         } if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;

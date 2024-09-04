@@ -1,4 +1,3 @@
-
 function showToast(message, duration = 3000) {
   // Create a div element for the toast message
   const toast = document.createElement('div');
@@ -212,7 +211,7 @@ function initializeChatPage() {
   blockButton.addEventListener('click', function() {
     const indexOfRecipient = blockArray.indexOf(recipientId);
     const statusIcon = document.getElementById(`status-icon-${recipientId}`);
-    const strikethrough = document.getElementById(`chat-target-${recipientId}`).querySelector('p');;
+    const strikethrough = document.getElementById(`chat-target-${recipientId}`).querySelector('p');
     if (indexOfRecipient === -1) {
       // User is not blocked, so block them
       blockArray.push(recipientId);
@@ -254,7 +253,7 @@ function initializeChatPage() {
   const profileEditName = document.getElementById('edit_name');
   // CHAT PROFILE AND MATCH HISTORY
   chatProfileButton.addEventListener('click', function() {
-    if (profileDiv.style.display === 'none' || profileName.textContent != allUsers[recipientId]) {
+    if ((profileDiv.style.display === 'none' || profileName.textContent != allUsers[recipientId]) && recipientId !== '0') {
       loadProfile(recipientId);
       profileEditName.style.display = 'none';
     }
@@ -282,6 +281,7 @@ function initializeChatPage() {
     chatSocket.send(
       JSON.stringify({
         type: "getStatusFromAllUsers",
+        username: currentUserName,
       })
     );
     console.log("The connection was setup successfully!");
@@ -291,6 +291,7 @@ function initializeChatPage() {
     //     type: "sendSystemMessage",
     //     message: "You are up next! Get ready to play!",
     //     recipient_id: currentUser,
+    //     username: currentUserName,
     //   })
     // );
   };
@@ -337,6 +338,7 @@ function initializeChatPage() {
         type: "sendDirectMessage",
         message: messageInput,
         recipient_id: recipientId,
+        username: currentUserName,
       })
     );
 
@@ -348,14 +350,16 @@ function initializeChatPage() {
 
   chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data);
-    console.log("onmessage:", data.purpose, data.senderID, data.message);
+    console.log("onmessage:", data.purpose, data.senderID, data.senderName, data.message);
     // do not process own messages
     if (data.senderID === currentUserID) {
       return
     }
 
+
     // Receive direct message
     if (data.purpose === 'directMessage' && data.senderID && data.senderName && data.message && !blockArray.includes(data.senderID)) {
+      
       if (!chatSections[data.senderID]) {
         const chatMessagesDiv = document.createElement('div');
         chatMessagesDiv.className = 'chat-messages flex-grow-1 p-3 overflow-auto d-none';
@@ -388,6 +392,16 @@ function initializeChatPage() {
     // Receive request for status
     if (data.purpose === 'requestStatus' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
      
+      // update username if other user change username in their profile
+      if (data.senderName !== allUsers[data.senderID]) {
+        allUsers[data.senderID] = data.senderName;
+        currentUserName = data.senderName;
+        console.log("enter", allUsers[data.senderID], data.senderName)
+        const chatTargetElement = document.getElementById(`chat-target-${data.senderID}`);
+        chatTargetElement.querySelector('p').textContent = data.senderName;
+        
+      }
+
       // New user come online
       if (!allUsers.hasOwnProperty(data.senderID)) {
         allUsers[data.senderID] = data.senderName;
@@ -409,7 +423,7 @@ function initializeChatPage() {
           statusIcon.textContent = '🟢';
           showToast(`${data.senderName} is online`, 3000);
         }
-      }
+      }      
 
       // update allUsersStatus in to catch the 2 second deta between ping and statusupdate
       allUsersStatus[data.senderID] = true;
@@ -418,6 +432,7 @@ function initializeChatPage() {
         JSON.stringify({
           type: "replyPing",
           recipient_id: data.senderID,
+          username: currentUserName,
         })
       );
     }
@@ -478,6 +493,7 @@ function initializeChatPage() {
       JSON.stringify({
         type: "getStatusFromAllUsers",
         content: currentUserID,
+        username: allUsers[currentUserID],
       })
     );
   
@@ -524,6 +540,7 @@ function initializeChatPage() {
           type: "sendInviteInfo",
           message: "AcceptInvite",
           recipient_id: recipientId,
+          username: currentUserName,
         })
       );
       showToast(`Pong Game with ${allUsers[recipientId]}!`, 5000);
@@ -536,7 +553,6 @@ function initializeChatPage() {
       let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one&userid=${currentUserID}&opponentid=${recipientId}`;
       startGame(url);
 
-      
       inviteButton.style.display = 'none';
     }
     // Second: user cancel invite from other users
@@ -548,6 +564,7 @@ function initializeChatPage() {
           type: "sendInviteInfo",
           message: "CancelInvite",
           recipient_id: recipientId,
+          username: currentUserName,
         })
       );
     }
@@ -566,8 +583,9 @@ function initializeChatPage() {
       chatSocket.send(
         JSON.stringify({
           type: "sendSystemMessage",
-          message: `You are invited to play a game with ${allUsers[recipientId]}! Accept the invite at ${allUsers[recipientId]} chat.`,
+          message: `You are invited to play a game with ${currentUserName}! Accept the invite at ${currentUserName} chat.`,
           recipient_id: recipientId,
+          username: currentUserName,
         })
       );
       // send invite info via web socket
@@ -576,6 +594,7 @@ function initializeChatPage() {
           type: "sendInviteInfo",
           message: "InviteForGame",
           recipient_id: recipientId,
+          username: currentUserName,
         })
       );
     }

@@ -373,7 +373,7 @@ async function loadProfile(user_id) {
 function editName(){
     document.getElementById("profile_name").style.display = 'none';
     document.getElementById("profile_name_input").style.display = '';
-    document.getElementById("profile_name_input").value = userData.username;
+    document.getElementById("profile_name_input").value = localStorage.getItem("username");
     document.getElementById("change_profile").style.display = '';
     document.getElementById("edit_name").style.display = 'none';
 }
@@ -391,7 +391,11 @@ function saveProfileChanges(){
         alert("Name cannot be empty");
         return;
     }
-    if (newUsername === userData.username){
+    if(newUsername === "pong-bot"){
+        alert("Name cannot be pong-bot");
+        return;
+    }
+    if (newUsername === localStorage.getItem("username")){
         alert("No changes made");
         return;
     }
@@ -407,7 +411,7 @@ function saveProfileChanges(){
         alert("Name cannot contain spaces");
         return;
     }
-    if (newUsername != userData.username){
+    if (newUsername != localStorage.getItem("username")){
         console.log("Updating name");
         let token = localStorage.getItem("accessToken");
         updateUserName(newUsername, token);
@@ -435,6 +439,9 @@ async function updateUserName(newUsername, token) {  // Added token parameter
         document.getElementById("usernameDisplay").textContent = newUsername;
         document.getElementById("profile_name").textContent = newUsername;
         document.getElementById("profile_settings_name").textContent = newUsername;
+        localStorage.setItem("username", newUsername);
+        const userid = jwt_decode(token).user_id;
+        allUsers[userid] = newUsername;
     }
     catch (error) {
         console.error('Fetch error:', error);
@@ -463,7 +470,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const profileDiv = document.getElementById('profile_settings');
         const profileName = document.getElementById('profile_name').textContent;
         const profileEditName = document.getElementById('edit_name');
-        if (profileDiv.style.display === 'none' || profileName !== currUserName) {
+
+        if ((profileDiv.style.display === 'none' || profileName !== currUserName) && profileName !== "pong-bot") {
             loadProfile(userid);
             profileEditName.style.display = 'block';
         }
@@ -471,7 +479,7 @@ document.addEventListener('DOMContentLoaded', function () {
             pongGameDiv.style.display = 'block'
             profileDiv.style.display = 'none';
             profileEditName.style.display = '';
-          }
+        }
     });
 });
 
@@ -559,10 +567,6 @@ function getCookie(name) {
         }
     }
     return cookieValue;
-}
-
-function getUsername() {
-    return localStorage.getItem('username');
 }
 
 function getUserIdPairs(){
