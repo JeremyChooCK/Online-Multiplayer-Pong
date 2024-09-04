@@ -50,6 +50,9 @@ function addUserToChatList(userID, username, chatTarget) {
     chatTarget.style.borderTop = '1px solid #ddd'; // Add a border to the bottom
     chatTarget.style.borderBottom = '1px solid #ddd'; // Add a border to the bottom
   }
+if (userID !== "0" && !friendList.includes(userID)) {
+    statusIcon.style.display = 'none';
+}
 
   // Create the username text
   const usernameText = document.createElement('p');
@@ -75,6 +78,7 @@ function handleChatTargetClick (chatTarget, userID, username) {
   const chatProfileButton = document.getElementById('chat-profile-button');
   const chatInput = document.getElementById('chat-input-container');
   const blockButton = document.getElementById('block-button');
+  const friendButton = document.getElementById('friend-button');
   const inviteButton = document.getElementById('invite-button');
 
   chatTarget.onclick = () => {
@@ -102,6 +106,13 @@ function handleChatTargetClick (chatTarget, userID, username) {
       blockButton.textContent = 'Click to Unblock';
     } else{
       blockButton.textContent = 'Click to Block';
+    }
+
+    // set block button text based on friendList. if user is friend, text = 'Unfriend'
+    if (friendList.includes(userID)) {
+      friendButton.textContent = 'Unfriend';
+    } else{
+      friendButton.textContent = 'Add Friend';
     }
 
     // set invite button text based on inviteArray.
@@ -162,6 +173,9 @@ function getTimeStamp(date) {
   return `${dayOfMonth} ${month} ${year}, ${day} | ${hours}:${minutes}`;
 }
 
+
+// ----------------------------------------------------------------------------------------------------------------
+
 let ongoingGame = false;
 let blockArray = [];
 let sendInviteArray = [];
@@ -169,6 +183,7 @@ let recieveInviteArray = [];
 let recipientId;
 let allUsers;
 let allUsersStatus = {};
+let friendList = [];
 const chatSections = {};  // Store chat sections for each user
 
 function initializeChatPage() {
@@ -178,6 +193,7 @@ function initializeChatPage() {
   const chatProfileButton = document.getElementById('chat-profile-button');
   const chatInput = document.getElementById('chat-input-container');
   const blockButton = document.getElementById('block-button');
+  const friendButton = document.getElementById('friend-button');
   let currentUserName = localStorage.getItem('username');
   let currentUserID = String(jwt_decode(token).user_id);
 
@@ -207,7 +223,7 @@ function initializeChatPage() {
   });
 
 
-  // Block logic
+  // ---------------------------- Block LOGIC ----------------------------
   blockButton.addEventListener('click', function() {
     const indexOfRecipient = blockArray.indexOf(recipientId);
     const statusIcon = document.getElementById(`status-icon-${recipientId}`);
@@ -247,13 +263,41 @@ function initializeChatPage() {
     }
   });
 
+
+  // ---------------------------- FRIEND LOGIC ----------------------------
+  friendButton.addEventListener('click', function() {
+    let userList = document.getElementById('usernames');
+    const indexOfRecipient = friendList.indexOf(recipientId);
+    const statusIcon = document.getElementById(`status-icon-${recipientId}`);
+    const usertomove = document.getElementById(`chat-target-${recipientId}`);
+    
+    if (indexOfRecipient === -1) {
+      // User is not friend, so add them
+      friendList.push(recipientId);
+      friendButton.textContent = 'Unfriend';
+      statusIcon.style.display = '';
+      userList.removeChild(usertomove);
+      userList.insertBefore(usertomove, userList.children[2])
+    } else {
+      // User is friend, so unfriend them
+      friendList.splice(indexOfRecipient, 1);
+      friendButton.textContent = 'Add Friend';
+      statusIcon.style.display = 'none';
+      userList.removeChild(usertomove);
+      userList.appendChild(usertomove);
+    }
+  });
+
+
+  // ---------------------------- CHAT PROFILE AND MATCH HISTORY ----------------------------
+
   const pongGameDiv = document.getElementById('pongGame');
   const profileDiv = document.getElementById('profile_settings');
   const profileName = document.getElementById('profile_name');
   const profileEditName = document.getElementById('edit_name');
-  // CHAT PROFILE AND MATCH HISTORY
+
   chatProfileButton.addEventListener('click', function() {
-    if (profileDiv.style.display === 'none' || profileName.textContent != allUsers[recipientId]) {
+    if ((profileDiv.style.display === 'none' || profileName.textContent != allUsers[recipientId]) && recipientId !== '0') {
       loadProfile(recipientId);
       profileEditName.style.display = 'none';
     }
@@ -265,7 +309,8 @@ function initializeChatPage() {
 
   });
 
-  // CHAT SOCKET
+  // ---------------------------- CHAT SOCKET ----------------------------
+
   const chatSocket = new WebSocket("wss://" + window.location.host + "/ws/chat/");
 
   // open socket
@@ -285,14 +330,6 @@ function initializeChatPage() {
       })
     );
     console.log("The connection was setup successfully!");
-    // exampple of a message from pong-bot 
-    // chatSocket.send(
-    //   JSON.stringify({
-    //     type: "sendSystemMessage",
-    //     message: "You are up next! Get ready to play!",
-    //     recipient_id: currentUser,
-    //   })
-    // );
   };
 
   // close socket
@@ -344,7 +381,7 @@ function initializeChatPage() {
   };
 
 
-  // ON MESSAGE RECEIVED
+  // ---------------------------- ON MESSAGE RECEIVED ----------------------------
 
   chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data);
@@ -468,7 +505,7 @@ function initializeChatPage() {
     }
   };
 
-  // STATUS UPDATE VIA PINGING
+  // ---------------------------- STATUS UPDATE VIA PINGING ----------------------------
 
   // ping all users every 5 seconds. reset allUsersStatus Array
   setInterval(() => {
@@ -500,7 +537,7 @@ function initializeChatPage() {
 
   const inviteButton = document.getElementById('invite-button');
 
-  // INVITE PLAYER TO GAME
+  // ---------------------------- INVITE PLAYER TO GAME ----------------------------
 
   // on click of invite button
   document.querySelector("#invite-button").onclick = function (e) {
@@ -514,6 +551,7 @@ function initializeChatPage() {
       return;
     }
 
+    
     // SCENARIOS on clicking of invite button
 
     // First: user accept invite from other user
