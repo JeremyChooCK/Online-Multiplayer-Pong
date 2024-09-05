@@ -183,6 +183,7 @@ let recipientId;
 let allUsers;
 let allUsersStatus = {};
 let friendList = [];
+
 const chatSections = {};  // Store chat sections for each user
 
 function initializeChatPage() {
@@ -219,6 +220,22 @@ function initializeChatPage() {
         handleChatTargetClick(chatTarget, userID, username);
         usernamesDiv.appendChild(chatTarget);
       }    
+    }
+
+
+    // INITIALIZE FRIEND LIST
+    let localfriendList = localStorage.getItem(`${currentUserID}.friendList`);
+    let userList = document.getElementById('usernames');
+
+    if (localfriendList) {
+      friendList = JSON.parse(localfriendList);
+      for (let i = 0; i < friendList.length; i++) {
+        const statusIcon = document.getElementById(`status-icon-${friendList[i]}`);
+        const usertomove = document.getElementById(`chat-target-${friendList[i]}`);
+        statusIcon.style.display = '';
+        userList.removeChild(usertomove);
+        userList.insertBefore(usertomove, userList.children[2])
+      }
     }
   });
 
@@ -265,6 +282,7 @@ function initializeChatPage() {
 
 
   // ---------------------------- FRIEND LOGIC ----------------------------
+
   friendButton.addEventListener('click', function() {
     let userList = document.getElementById('usernames');
     const indexOfRecipient = friendList.indexOf(recipientId);
@@ -274,6 +292,7 @@ function initializeChatPage() {
     if (indexOfRecipient === -1) {
       // User is not friend, so add them
       friendList.push(recipientId);
+      localStorage.setItem(`${currentUserID}.friendList`, JSON.stringify(friendList));
       friendButton.textContent = 'Unfriend';
       statusIcon.style.display = '';
       userList.removeChild(usertomove);
@@ -281,6 +300,7 @@ function initializeChatPage() {
     } else {
       // User is friend, so unfriend them
       friendList.splice(indexOfRecipient, 1);
+      localStorage.setItem(`${currentUserID}.friendList`, JSON.stringify(friendList));
       friendButton.textContent = 'Add Friend';
       statusIcon.style.display = 'none';
       userList.removeChild(usertomove);

@@ -80,7 +80,9 @@ async function handleLoggedOutState() {
     const refreshToken = localStorage.getItem("refreshToken");
 
     if (accessToken || refreshToken) {
-        localStorage.clear();
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('username');
         window.location.reload();
     }
     document.getElementById("usernameDisplay").textContent = '';
