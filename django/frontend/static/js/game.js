@@ -53,6 +53,37 @@ localButton.addEventListener('click', async function() {
     startGame(url);
 });
 
+function notifyPongBot (message) {
+    if (!chatSections["0"]) {
+        const chatMessagesDiv = document.createElement('div');
+        chatMessagesDiv.className = 'chat-messages flex-grow-1 p-3 overflow-auto d-none';
+        chatMessagesDiv.id = `chat-messages-${"0"}`;
+        chatSections["0"] = chatMessagesDiv;
+        document.querySelector('.chat-section').insertBefore(chatMessagesDiv, document.querySelector('.chat-input-container'));
+    }
+        
+    var div = document.createElement("div");
+    div.className = "chat-message";
+    div.innerHTML = `${message}`;
+
+    var timestamp = document.createElement("div");
+    timestamp.className = "timestamp";
+    timestamp.innerHTML = getTimeStamp(new Date());
+    div.appendChild(timestamp);
+
+    chatSections["0"].appendChild(div);
+    chatSections["0"].scrollTop = chatSections["0"].scrollHeight;
+
+    const chatTarget = document.getElementById(`chat-target-${"0"}`);
+    if (chatTarget && !chatTarget.classList.contains('selected')) {
+        const unreadCounter = document.getElementById(`unread-counter-${"0"}`);
+        unreadCounter.textContent = Number(unreadCounter.textContent) + 1;
+        unreadCounter.style.display = 'inline';
+        console.log('unread message');
+    }
+    
+}
+
 function startGame(url) {
 
     const token = localStorage.getItem('accessToken');
@@ -73,40 +104,14 @@ function startGame(url) {
             playerNumber = data.player_number;
         } else if (data.type === 'game_starting') {
             messageBox.innerText = data.message;
+            notifyPongBot(data.message);
         } else if (data.type === 'notify') {
             console.log("Notify:", data.message);
             messageBox.innerText = data.message;
-
-        if (!chatSections["0"]) {
-            const chatMessagesDiv = document.createElement('div');
-            chatMessagesDiv.className = 'chat-messages flex-grow-1 p-3 overflow-auto d-none';
-            chatMessagesDiv.id = `chat-messages-${"0"}`;
-            chatSections["0"] = chatMessagesDiv;
-            document.querySelector('.chat-section').insertBefore(chatMessagesDiv, document.querySelector('.chat-input-container'));
-            }
-            
-            var div = document.createElement("div");
-            div.className = "chat-message";
-            div.innerHTML = `${data.message}`;
-    
-            var timestamp = document.createElement("div");
-            timestamp.className = "timestamp";
-            timestamp.innerHTML = getTimeStamp(new Date());
-            div.appendChild(timestamp);
-    
-            chatSections["0"].appendChild(div);
-            chatSections["0"].scrollTop = chatSections["0"].scrollHeight;
-    
-            const chatTarget = document.getElementById(`chat-target-${"0"}`);
-            if (chatTarget && !chatTarget.classList.contains('selected')) {
-            const unreadCounter = document.getElementById(`unread-counter-${"0"}`);
-            unreadCounter.textContent = Number(unreadCounter.textContent) + 1;
-            unreadCounter.style.display = 'inline';
-            console.log('unread message');
-            }
-
+            notifyPongBot(data.message);
         } else if (data.type === 'game_over') {
             messageBox.innerText = data.message;
+            notifyPongBot(data.message);
             ongoingGame = false;
             const inviteButton = document.getElementById('invite-button');
             inviteButton.style.display = 'block';
