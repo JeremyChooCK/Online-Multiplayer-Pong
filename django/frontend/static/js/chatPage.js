@@ -103,6 +103,12 @@ function handleChatTargetClick (chatTarget, userID, username) {
     // set block button text based on blockArray. if user is blocked, text = 'Unblock'
     if (blockArray.includes(userID)) {
       blockButton.textContent = 'Click to Unblock';
+      // remove chat input
+      chatInput.classList.remove('d-flex');
+      chatInput.classList.add('d-none');
+      // remove chat section
+      chatSections[userID].classList.remove('d-flex');
+      chatSections[userID].classList.add('d-none');
     } else{
       blockButton.textContent = 'Click to Block';
     }
@@ -222,11 +228,24 @@ function initializeChatPage() {
       }    
     }
 
+    // INITIALIZE BLOCK LIST
+    let localblockList = localStorage.getItem(`${currentUserID}.blockList`);
+    if (localblockList) {
+      blockArray = JSON.parse(localblockList);
+      for (let i = 0; i < blockArray.length; i++) {
+        const statusIcon = document.getElementById(`status-icon-${blockArray[i]}`);
+        const strikethrough = document.getElementById(`chat-target-${blockArray[i]}`).querySelector('p');
+        // change status icon to grey if user is blocked
+        if (statusIcon && blockArray[i] !== "0") {
+          statusIcon.textContent = '⚫';
+        }
+        strikethrough.style.textDecoration = 'line-through'; // Add a strikethrough 
+      }
+    }
 
     // INITIALIZE FRIEND LIST
     let localfriendList = localStorage.getItem(`${currentUserID}.friendList`);
     let userList = document.getElementById('usernames');
-
     if (localfriendList) {
       friendList = JSON.parse(localfriendList);
       for (let i = 0; i < friendList.length; i++) {
@@ -248,6 +267,7 @@ function initializeChatPage() {
     if (indexOfRecipient === -1) {
       // User is not blocked, so block them
       blockArray.push(recipientId);
+      localStorage.setItem(`${currentUserID}.blockList`, JSON.stringify(blockArray));
       // change button text
       blockButton.textContent = 'Click to Unblock';
       chatProfileButton.textContent = allUsers[recipientId] + ' (BLOCKED)';
@@ -262,10 +282,10 @@ function initializeChatPage() {
         statusIcon.textContent = '⚫';
       }
       strikethrough.style.textDecoration = 'line-through'; // Add a strikethrough 
-      console.log(blockArray)
     } else {
       // User is blocked, so unblock them
       blockArray.splice(indexOfRecipient, 1);
+      localStorage.setItem(`${currentUserID}.blockList`, JSON.stringify(blockArray));
       // change button text
       blockButton.textContent = 'Click to Block';
       chatProfileButton.textContent = allUsers[recipientId];
@@ -276,7 +296,6 @@ function initializeChatPage() {
       chatSections[recipientId].classList.remove('d-none');
       chatSections[recipientId].classList.add('d-flex');
       strikethrough.style.textDecoration = 'none'; // Add a strikethrough
-      console.log(blockArray)
     }
   });
 
