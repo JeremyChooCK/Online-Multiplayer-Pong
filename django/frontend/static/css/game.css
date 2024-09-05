@@ -13,7 +13,6 @@ html, body {
     height: 400px;
     border: 2px solid #000000;
     margin: 10px;
-    margin-top: 56px;
 }
 
 .paddle {
@@ -43,14 +42,47 @@ html, body {
 
 #score {
     color: rgb(0, 0, 0);
-    font-size: 18px;
+    font-size: 28px;
     text-align: center;
-    margin-top: 10px;
+    margin: 30px;
+}
+
+#score pre {
+    margin: 0;
 }
 
 #winMessage {
+    text-align: center;
     font-size: 24px;
     color: red;
     text-align: center;
     margin-top: 20px;
+}
+
+#container {
+    display: flex;
+    flex-direction: column;
+}
+
+#messageBox {
+    color: rgb(100, 100, 100);
+    font-size: 16px;
+    text-align: center;
+}
+
+#pongbuttons {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#pongbuttons button {
+    width: 200px;
+    font-size: 16px;
+    background-color: #000000;
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
 }
