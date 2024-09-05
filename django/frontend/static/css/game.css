@@ -86,3 +86,11 @@ html, body {
     border: none;
     cursor: pointer;
 }
+
+
+#controls {
+    color: rgb(100, 100, 100);
+    font-size: 16px;
+    text-align: right;
+    margin-right: 20px;
+}
