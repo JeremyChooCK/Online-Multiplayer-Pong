@@ -30,6 +30,7 @@ import random
 from django.core.mail import send_mail
 from django.core.cache import cache
 from rest_framework.permissions import AllowAny
+import uuid
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -91,7 +92,7 @@ def oauth_callback(request):
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={
-                    'username': user_info['login'],  # Set username here only on creation
+                    'username': str(uuid.uuid4())[:8],  # Set username here only on creation
                     'first_name': user_info.get('first_name', '')
                 }
             )
