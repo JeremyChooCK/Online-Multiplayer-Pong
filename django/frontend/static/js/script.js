@@ -275,9 +275,9 @@ async function refreshAccessToken() {
 }
 
 function redirectToOAuthProvider() {
-    const authUrl = "https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-9b0fa67cf4ac001dac948db1c08b417156de148160cb998b92520a9e9bbaef2b&redirect_uri=https%3A%2F%2Flocalhost%2Fauth%2Foauth&response_type=code";
+    // get authUrl from env file
+    const authUrl = env.authUrl;
     console.log('Auth URL:', authUrl);
-
     window.location.href = authUrl; // This will redirect the user to the OAuth provider
 }
 
