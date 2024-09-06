@@ -4,6 +4,7 @@ from django.db.models import JSONField  # Import this from django.db.models
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    twofa = models.BooleanField(default=False)
     profile_picture = models.ImageField(upload_to='profile_pictures/', null=True, blank=True, default='profile_pictures/default.png')
     wins = models.IntegerField(default=0)
     losses = models.IntegerField(default=0)

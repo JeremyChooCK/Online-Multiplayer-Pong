@@ -162,12 +162,15 @@ async function loginAfterRegister(username, password) {
 
 async function postRegister() {
     const username = document.getElementById("newUsernameInput").value;
+    const email = document.getElementById("emailInput").value;
     const password = document.getElementById("newPasswordInput").value;
     const confirmPassword = document.getElementById("confirmPasswordInput").value;
-    // if (password !== confirmPassword) {
-    //     alert("Passwords do not match.");
-    //     return;
-    // }
+    if (password !== confirmPassword) {
+        alert("Passwords do not match.");
+        return;
+    }
+    const twofa = document.getElementById("2faInput").checked;
+    console.log("twofa: ", twofa);
     const url = ip + "auth/register/";
     
     try {
@@ -176,7 +179,7 @@ async function postRegister() {
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ username, password }),
+            body: JSON.stringify({ username, password, email, profile: { twofa: twofa } }),
         });
 
         if (!response.ok) {

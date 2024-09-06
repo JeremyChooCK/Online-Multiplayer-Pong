@@ -26,6 +26,9 @@ from .models import UserProfile
 from django.conf import settings
 from django.views.decorators.csrf import csrf_protect
 from django.shortcuts import get_object_or_404
+import random
+from django.core.mail import send_mail
+from django.core.cache import cache
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -46,6 +49,7 @@ class UserCreate(APIView):
     Creates the user.
     """
     def post(self, request, format='json'):
+        print("Received data:", request.data)
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -204,3 +208,27 @@ class UserIdPairsView(APIView):
 def get_all_usernames(request):
     usernames = User.objects.values_list('username', flat=True)
     return JsonResponse(list(usernames), safe=False)
+
+def send_verification_code(user):
+    code = random.randint(100000, 999999)
+    cache.set(f'verify_code_{user.id}', str(code), timeout=600)  # Store code for 10 minutes
+
+    send_mail(
+        'Your Verification Code',
+        f'Your verification code is {code}',
+        'from@example.com',
+        [user.email],
+        fail_silently=False,
+    )
+    
+@api_view(['POST'])
+def verify_code(request):
+    user = request.user
+    code = request.data.get('code')
+    cached_code = cache.get(f'verify_code_{user.id}')
+
+    if cached_code == code:
+        cache.delete(f'verify_code_{user.id}')  # Remove the code from cache after successful verification
+        return Response({'message': 'Verification successful'}, status=status.HTTP_200_OK)
+    else:
+        return Response({'error': 'Invalid or expired code'}, status=status.HTTP_400_BAD_REQUEST)
