@@ -295,7 +295,7 @@ async function postRegister() {
 
         const data = await response.json();
         console.log('successfully registered');
-        loginAfterRegister(username, password);
+        // loginAfterRegister(username, password);
         return data;
     } catch (error) {
         console.error('Fetch error:', error);
@@ -629,15 +629,16 @@ async function uploadFile(file) {
         console.log("TOKEN: ", token);
 
         const csrfToken = getCookie('csrftoken'); // Function to get CSRF token from cookies
-        if (!csrfToken) {
-            console.error('No CSRF token found.');
-            return;
-        }
+        // if (!csrfToken) {
+        //     console.error('No CSRF token found.');
+        //     return;
+        // }
 
         console.log("CSRF Token: ", csrfToken);
 
         const response = await fetch(ip + "auth/edit/picture", {
             method: "POST",
+            credentials: 'include',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 "X-CSRFToken": csrfToken // Include CSRF token here
