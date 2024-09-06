@@ -14,7 +14,7 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" role="navigation">
         <div class="container">
-            <a class="navbar-brand" href="#">TRANSCENDENCE</a>
+            <!-- <a class="navbar-brand" href="#">TRANSCENDENCE</a> -->
             <button class="navbar-toggler border-0" type="button" data-toggle="collapse" data-target="#exCollapsingNavbar">
                 &#9776;
             </button>
@@ -22,7 +22,7 @@
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text text-white mr-3" id="welcomeSection">Welcome, <span id="usernameDisplay"></span>!</span>
-                        <img class="img-fluid rounded-circle" id="profile_pic" style="max-width: 40px; height: auto;">
+                        <img class="img-fluid rounded-circle mr-3" id="profile_pic" style="max-width: 40px; height: auto;">
                     </li>
                     <li class="nav-item">
                         <button type="button" id="logoutButton" style="display: none;" onclick="handleLoggedOutState()" class="btn btn-outline-secondary">Log out</button>
@@ -165,13 +165,13 @@
                 <!-- Usernames will be added here -->
             </div>
             <div class="chat-section d-flex flex-column">
-                <div class="chat-header bg-primary text-white text-center p-3 d-none justify-content-between align-items-center" id="chat-header">
-                <button class="btn btn-primary" id="chat-profile-button"></button>
-                <div d-flex flex-row>
-                    <button class="btn btn-warning" style="margin-bottom: 5px;" id="friend-button">Add friend</button>
-                    <button class="btn btn-warning" id="block-button">Click to Block</button>
+                <div class="chat-header bg-dark text-white text-center p-3 d-none justify-content-between align-items-center" id="chat-header">
+                <button class="btn btn-dark" style="width: 200px; height: 100%; white-space: normal; word-wrap: break-word;" id="chat-profile-button"></button>
+                <div class="d-flex flex-column">
+                    <button class="btn btn-dark" style="margin-bottom: 5px; width: 150px;" id="friend-button">Add friend</button>
+                    <button class="btn btn-dark" style="width: 150px" id="block-button">Click to Block</button>
                 </div>
-                    <button class="btn btn-dark" id="invite-button">Invite Player to Game</button>
+                    <button class="btn btn-light" style="width: 200px; height: 100%;" id="invite-button">Invite Player to Game</button>
                 </div>
                 <!-- Chat messages for each user will be dynamically added here -->
                 <div class="chat-input-container d-none p-3 border-top" id="chat-input-container">

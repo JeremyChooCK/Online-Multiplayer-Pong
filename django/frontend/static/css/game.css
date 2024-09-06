@@ -82,8 +82,9 @@ html, body {
 
 #pongbuttons button {
     width: 200px;
+    padding: 5px;
     font-size: 16px;
-    background-color: #000000;
+    background-color: #343a40;
     color: #ffffff;
     border: none;
     cursor: pointer;
