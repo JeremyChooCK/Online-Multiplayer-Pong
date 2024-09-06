@@ -115,8 +115,8 @@
                             <div class="col-md-6"><label class="labels">Losses</label><p type="text" id="profile_losses"></p></div>
                         </div>
                         <div id="change_profile" class="mt-5 text-center" style="display: none;">
-                            <button class="btn btn-primary profile-button" type="button" onclick="saveProfileChanges()">Save</button>
-                            <button onclick="cancelNameChange()" class="btn btn-primary profile-button" type="button">Cancel</button>
+                            <button class="btn btn-dark profile-button" type="button" onclick="saveProfileChanges()">Save</button>
+                            <button onclick="cancelNameChange()" class="btn btn-dark profile-button" type="button">Cancel</button>
                         </div>
                     </div>
                 </div>            
@@ -138,11 +138,11 @@
             </div>
             <!-- New table ends here -->
         </div>
-    <div id="2faModal" style="display: none;">
-        <h3>Two Step Verification</h3>
-        <input type="text" placeholder="VerifyCode" id="2faverify">
-        <button onclick="postTwofa()">Verify</button>
-    </div>
+          <div id="2faModal" style="display: none;">
+              <h3>Two Step Verification</h3>
+              <input type="text" placeholder="VerifyCode" id="2faverify">
+              <button onclick="postTwofa()">Verify</button>
+          </div>
         <div id="game-container">
             <div id="pongbuttons">
                 <button id="joinButton">Join Tournament</button>
