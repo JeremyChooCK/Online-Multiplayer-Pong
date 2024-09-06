@@ -167,3 +167,17 @@
   .slider.round:before {
 	border-radius: 50%;
   } 
+
+  #profile_setting {
+	width: 50%;
+  }
+
+  #left-container {
+	width: 50%;
+	height: 80%;
+	justify-content: center;
+	align-items: center;
+	margin: 10px;
+	margin-top: 56px;
+	
+  }

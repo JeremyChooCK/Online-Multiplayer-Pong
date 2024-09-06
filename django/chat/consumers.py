@@ -9,11 +9,11 @@ class ChatConsumer(AsyncWebsocketConsumer): #inherits from AsyncWebsocketConsume
     async def disconnect(self , close_code):
         await self.channel_layer.group_discard(
             self.indivialRoom, 
-            self.channel_layer 
+            self.channel_name 
         )
         await self.channel_layer.group_discard(
             self.allUsersRoom, 
-            self.channel_layer 
+            self.channel_name 
         )
 
     async def receive(self, text_data): # receiving what was typed and sent by ownself. script, user use chatSocket.send. then its own server is receiving its own message and processed it.

@@ -14,17 +14,11 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top" role="navigation">
         <div class="container">
-            <a class="navbar-brand" href="#">Brand</a>
+            <a class="navbar-brand" href="#">TRANSCENDENCE</a>
             <button class="navbar-toggler border-0" type="button" data-toggle="collapse" data-target="#exCollapsingNavbar">
                 &#9776;
             </button>
             <div class="collapse navbar-collapse" id="exCollapsingNavbar">
-                <ul class="nav navbar-nav">
-                    <li class="nav-item"><a href="#" class="nav-link">About</a></li>
-                    <li class="nav-item"><a href="#" class="nav-link">Link</a></li>
-                    <li class="nav-item"><a href="#" class="nav-link">Service</a></li>
-                    <li class="nav-item"><a href="#" class="nav-link">More</a></li>
-                </ul>
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item d-flex align-items-center">
                         <span class="navbar-text text-white mr-3" id="welcomeSection">Welcome, <span id="usernameDisplay"></span>!</span>
@@ -93,57 +87,58 @@
             </div>
         </div>
     </nav>
-    <div class="container-fluid rounded bg-white mt-5 mb-5" id="profile_settings" style="display: none;">
-        <div class="row">
-            <div class="col-md-4 border-right">
-                <div class="d-flex flex-column align-items-center text-center p-3 py-5">
-                    <img class="rounded-circle mt-5" width="150px" id="profile_page_pic" src="">
-                    <input id="profile_page_pic_input" type="file" accept="image/" style="display: none;">
-                    <span id="profile_settings_name" class="font-weight-bold"></span>
-                </div>
-            </div>
-            <div class="col-md-8">
-                <div class="p-3 py-5">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h4 class="text-right">Profile Settings</h4>
+    
+    <div id="left-container">
+        <div id="profile_settings" style="display: none; ">
+            <div class="row">
+                <div class="col-md-4 border-right">
+                    <div class="d-flex flex-column align-items-center text-center p-3 py-5">
+                        <img class="rounded-circle mt-5" width="150px" id="profile_page_pic" src="">
+                        <input id="profile_page_pic_input" type="file" accept="image/" style="display: none;">
+                        <span id="profile_settings_name" class="font-weight-bold"></span>
                     </div>
-                    <div class="row mt-3">
-                        <div class="col-md-12">
-                            <label class="labels">Name  <i id="edit_name" onclick="editName()" class="fa-solid fa-pen-to-square"></i></label>
-                            <input id="profile_name_input" type="text" class="form-control" style="display: none;">
-                            <p id="profile_name"></p>
+                </div>
+                <div class="col-md-8">
+                    <div class="p-3 py-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4 class="text-right">Profile Settings</h4>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <label class="labels">Name  <i id="edit_name" onclick="editName()" class="fa-solid fa-pen-to-square"></i></label>
+                                <input id="profile_name_input" type="text" class="form-control" style="display: none;">
+                                <p id="profile_name"></p>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6"><label class="labels">Wins</label><p type="text" id="profile_wins"></p></div>
+                            <div class="col-md-6"><label class="labels">Losses</label><p type="text" id="profile_losses"></p></div>
+                        </div>
+                        <div id="change_profile" class="mt-5 text-center" style="display: none;">
+                            <button class="btn btn-primary profile-button" type="button" onclick="saveProfileChanges()">Save</button>
+                            <button onclick="cancelNameChange()" class="btn btn-primary profile-button" type="button">Cancel</button>
                         </div>
                     </div>
-                    <div class="row mt-2">
-                        <div class="col-md-6"><label class="labels">Wins</label><p type="text" id="profile_wins"></p></div>
-                        <div class="col-md-6"><label class="labels">Losses</label><p type="text" id="profile_losses"></p></div>
+                </div>            
+            </div>
+            <!-- New table starts here -->
+            <div class="row mt-3" id="match_history">
+                <div class="col-md-12">
+                    <div> <!-- Wrap the table in a div -->
+                        <table class="table table-bordered w-100" id="match_history_table">
+                            <thead>
+                                Match History
+                            </thead>
+                            <tbody id="match_history_body">
+                                <!-- Rows will be dynamically added here -->
+                            </tbody>
+                        </table>
                     </div>
-                    <div id="change_profile" class="mt-5 text-center" style="display: none;">
-                        <button class="btn btn-primary profile-button" type="button" onclick="saveProfileChanges()">Save</button>
-                        <button onclick="cancelNameChange()" class="btn btn-primary profile-button" type="button">Cancel</button>
-                    </div>
-                </div>
-            </div>            
-        </div>
-        <!-- New table starts here -->
-        <div class="row mt-3" id="match_history">
-            <div class="col-md-12">
-                <div> <!-- Wrap the table in a div -->
-                    <table class="table table-bordered w-75" id="match_history_table">
-                        <thead>
-                            Match History
-                        </thead>
-                        <tbody id="match_history_body">
-                            <!-- Rows will be dynamically added here -->
-                        </tbody>
-                    </table>
                 </div>
             </div>
+            <!-- New table ends here -->
         </div>
-        <!-- New table ends here -->
-    </div>
-    <div id="container">
-        <div id="container">
+        <div id="game-container">
             <div id="pongbuttons">
                 <button id="joinButton">Join Tournament</button>
                 <button id="localButton">Local Game</button>
@@ -153,14 +148,14 @@
                 <pre><span id="player1Score">0</span>               <span id="player2Score">0</span></pre>
             </div>
             <div id="messageBox">Lets' Play Pong!</div>
-        </div>
-        <div id="pongGame">
-            <div id="paddle1" class="paddle"></div>
-            <div id="paddle2" class="paddle"></div>
-            <div id="ball"></div>
-        </div>
+            <div id="pongGame">
+                <div id="paddle1" class="paddle"></div>
+                <div id="paddle2" class="paddle"></div>
+                <div id="ball"></div>
+            </div>
 
-        <div id="controls"> controls here! </div>
+            <div id="controls"> controls here! </div>
+        </div>
     </div>
 
         <!-- Chat Interface -->
@@ -171,10 +166,12 @@
             </div>
             <div class="chat-section d-flex flex-column">
                 <div class="chat-header bg-primary text-white text-center p-3 d-none justify-content-between align-items-center" id="chat-header">
-                <button class="h5 m-0" id="chat-profile-button"></button>
-                <button class="btn btn-success" id="friend-button">Add friend</button>
-                <button class="btn btn-success" id="invite-button">Invite Player to Game</button>
-                <button class="btn btn-danger" id="block-button">Click to Block</button>
+                <button class="btn btn-primary" id="chat-profile-button"></button>
+                <div d-flex flex-row>
+                    <button class="btn btn-warning" style="margin-bottom: 5px;" id="friend-button">Add friend</button>
+                    <button class="btn btn-warning" id="block-button">Click to Block</button>
+                </div>
+                    <button class="btn btn-dark" id="invite-button">Invite Player to Game</button>
                 </div>
                 <!-- Chat messages for each user will be dynamically added here -->
                 <div class="chat-input-container d-none p-3 border-top" id="chat-input-container">
