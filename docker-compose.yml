@@ -36,6 +36,9 @@ services:
       - EMAIL_PORT=${EMAIL_PORT}
       - EMAIL_HOST=${EMAIL_HOST}
       - DJANGO_SETTINGS_MODULE=transcendance.settings
+      - authUrl=${authUrl}
+      - client_id=${client_id}
+      - client_secret=${client_secret}
     depends_on:
       - db
     networks:
