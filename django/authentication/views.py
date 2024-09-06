@@ -29,17 +29,28 @@ from django.shortcuts import get_object_or_404
 import random
 from django.core.mail import send_mail
 from django.core.cache import cache
+from rest_framework.permissions import AllowAny
 
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
 
-        # Add custom claims
-        token['username'] = user.username
-        # ...
+        if user.profile.twofa:  # Assuming `twofa` is a BooleanField on UserProfile
+            # Note: Do not send the code here; just inform the frontend that further action is required
+            send_verification_code(user)
+            return {
+                'require_2fa': True,
+                'message': '2FA verification required.',
+                'user_id': user.id,
+                'email': user.email  # You may want to mask this for security
+            }
 
-        return token
+        # Regular token creation
+        refresh = RefreshToken.for_user(user)
+        data['refresh'] = str(refresh)
+        data['access'] = str(refresh.access_token)
+        return data
     
 class MyTokenObtainPairView(TokenObtainPairView):
         serializer_class = MyTokenObtainPairSerializer
@@ -211,24 +222,44 @@ def get_all_usernames(request):
 
 def send_verification_code(user):
     code = random.randint(100000, 999999)
-    cache.set(f'verify_code_{user.id}', str(code), timeout=600)  # Store code for 10 minutes
-
+    print(user.username)
+    cache.set(f'verify_code_{user.username}', str(code), timeout=600)  # Store code for 10 minutes
+    print(f'Verification code for {user.username}: {code}')
     send_mail(
         'Your Verification Code',
         f'Your verification code is {code}',
-        'from@example.com',
+        'transcendenceverifyy@gmail.com',
         [user.email],
         fail_silently=False,
     )
     
-@api_view(['POST'])
-def verify_code(request):
-    user = request.user
-    code = request.data.get('code')
-    cached_code = cache.get(f'verify_code_{user.id}')
+class verify_code_view(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
 
-    if cached_code == code:
-        cache.delete(f'verify_code_{user.id}')  # Remove the code from cache after successful verification
-        return Response({'message': 'Verification successful'}, status=status.HTTP_200_OK)
-    else:
-        return Response({'error': 'Invalid or expired code'}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        username = request.data.get('username')
+        code = request.data.get('code')
+        if not username or not code:
+            return Response({'error': 'Username and code are required'}, status=400)
+
+        user = get_user_model().objects.filter(username=username).first()
+        if not user:
+            return Response({'error': 'User not found'}, status=404)
+
+        cached_code = cache.get(f'verify_code_{username}')
+        if not cached_code:
+            return Response({'error': 'Verification code has expired or is incorrect'}, status=400)
+
+        if str(cached_code) != str(code):
+            return Response({'error': 'Invalid verification code'}, status=400)
+
+        # Delete the code from cache after successful verification
+        cache.delete(f'verify_code_{username}')
+
+        # Generate tokens
+        refresh = RefreshToken.for_user(user)
+        return Response({
+            'refresh': str(refresh),
+            'access': str(refresh.access_token),
+        }, status=200)
