@@ -217,6 +217,9 @@ document.addEventListener('keyup', function(event) {
 });
 
 function sendPaddleMove(direction) {
+    if (typeof gameSocket !== 'object') {
+        return;
+    }
     gameSocket.send(JSON.stringify({
         action: 'move_paddle',
         direction: direction,

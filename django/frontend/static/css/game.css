@@ -25,11 +25,11 @@ html, body {
 }
 
 #paddle1 {
-    left: 35px;
+    left: 50px;
 }
 
 #paddle2 {
-    right: 35px;
+    right: 50px;
 }
 
 #ball {

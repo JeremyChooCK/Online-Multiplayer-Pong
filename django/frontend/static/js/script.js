@@ -253,6 +253,32 @@ async function postRegister() {
     console.log("twofa: ", twofa);
     const url = ip + "auth/register/";
     
+    if(username === ""){
+        alert("username cannot be empty");
+        return;
+    }
+    if(username.includes("pong-bot")){
+        alert("username cannot be pong-bot");
+        return;
+    }
+    if (username === localStorage.getItem("username")){
+        alert("No changes made");
+        return;
+    }
+    if(username.length > 12){
+        alert("username too long");
+        return;
+    }
+    if(username.length < 3){
+        alert("username too short");
+        return;
+    }
+    if(username.includes(" ")){
+        alert("username cannot contain spaces");
+        return;
+    }
+
+
     try {
         const response = await fetch(url, {
             method: "POST",
