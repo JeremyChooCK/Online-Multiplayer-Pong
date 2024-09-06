@@ -8,7 +8,7 @@ function showToast(message, duration = 3000) {
   // Style the toast message
   toast.style.position = 'fixed';
   toast.style.top = '65px';
-  toast.style.right = '20px';
+  toast.style.left = '20px';
   toast.style.padding = '10px';
   toast.style.color = 'white';
   toast.style.backgroundColor = 'green';
@@ -627,7 +627,7 @@ function initializeChatPage() {
       }
       let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one&userid=${currentUserID}&opponentid=${recipientId}`;
       startGame(url);
-
+      ongoingGame = true;
       inviteButton.style.display = 'none';
     }
     // Second: user cancel invite from other users

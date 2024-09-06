@@ -19,6 +19,7 @@ joinButton.addEventListener('click', async function() {
     }
     let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=tournament`;
     startGame(url);
+    ongoingGame = true;
 });
 
 // oneOnOneButton.addEventListener('click', async function() {
@@ -30,6 +31,7 @@ function playOneOnOne() {
     }
     let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one`;
     startGame(url);
+    ongoingGame = true;
 };
 
 // oneAiButton.addEventListener('click', async function() {
@@ -41,6 +43,7 @@ function playAI() {
     }
     let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=ai`;
     startGame(url);
+    ongoingGame = true;
 };
 
 localButton.addEventListener('click', async function() {
@@ -51,6 +54,7 @@ localButton.addEventListener('click', async function() {
     }
     let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=local`;
     startGame(url);
+    ongoingGame = true;
 });
 
 function notifyPongBot (message) {
