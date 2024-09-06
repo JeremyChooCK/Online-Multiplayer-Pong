@@ -248,8 +248,9 @@ class RoomManager:
 
     async def timeout_player(self, player):
         await asyncio.sleep(self.TIMEOUT_SECONDS)
-        if player in self.waiting_players_one_on_one:
-            self.waiting_players_one_on_one.pop(player)
+        if player in self.waiting_players_one_on_one.values():
+            key = next(key for key, value in self.waiting_players_one_on_one.items() if value == player)
+            self.waiting_players_one_on_one.pop(key)
             await player.send(json.dumps({'type': 'notify', 'message': 'Timeout'}))
             RoomManager.active_connections.pop(player.user_id, None)
             await player.close()
