@@ -145,8 +145,8 @@ def exchange_code_for_token(code):
         'grant_type': 'authorization_code',
         'code': code,
         'redirect_uri': 'https://localhost/auth/oauth',
-        'client_id': 'u-s4t2ud-9b0fa67cf4ac001dac948db1c08b417156de148160cb998b92520a9e9bbaef2b',
-        'client_secret': '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',
+        'client_id': environ.get('CLIENT_ID'),
+        'client_secret': environ.get('CLIENT_SECRET'),
     }
     response = requests.post(token_url, data=data)
     # Check if the request was successful
