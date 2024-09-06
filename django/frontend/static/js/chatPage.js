@@ -358,14 +358,14 @@ function initializeChatPage() {
       JSON.stringify({
         type: "createIndivialRoom",
         userID: currentUserID,
-        username: currentUserName,
+        username: localStorage.getItem('username'),
       })
     );
     // when login, trigger a ping to all users to get online status
     chatSocket.send(
       JSON.stringify({
         type: "getStatusFromAllUsers",
-        username: currentUserName,
+        username: localStorage.getItem('username'),
       })
     );
     console.log("The connection was setup successfully!");
@@ -413,7 +413,7 @@ function initializeChatPage() {
         type: "sendDirectMessage",
         message: messageInput,
         recipient_id: recipientId,
-        username: currentUserName,
+        username: allUsers[currentUserID],
       })
     );
 
@@ -494,8 +494,6 @@ function initializeChatPage() {
       // update username if other user change username in their profile
       if (data.senderName !== allUsers[data.senderID]) {
         allUsers[data.senderID] = data.senderName;
-        currentUserName = data.senderName;
-        console.log("enter", allUsers[data.senderID], data.senderName)
         const chatTargetElement = document.getElementById(`chat-target-${data.senderID}`);
         chatTargetElement.querySelector('p').textContent = data.senderName;
       }
@@ -507,7 +505,7 @@ function initializeChatPage() {
         JSON.stringify({
           type: "replyPing",
           recipient_id: data.senderID,
-          username: currentUserName,
+          username: allUsers[currentUserID],
         })
       );
     }
@@ -531,6 +529,7 @@ function initializeChatPage() {
       if (data.senderID === recipientId) {
         inviteButton.textContent = 'Accept invite';
       }
+      showToast(`${data.senderName} invited you to play a game!`, 5000);
     }
 
     // Recieve Cancel Invite
@@ -616,7 +615,7 @@ function initializeChatPage() {
           type: "sendInviteInfo",
           message: "AcceptInvite",
           recipient_id: recipientId,
-          username: currentUserName,
+          username: allUsers[currentUserID],
         })
       );
       showToast(`Pong Game with ${allUsers[recipientId]}!`, 5000);
@@ -640,7 +639,7 @@ function initializeChatPage() {
           type: "sendInviteInfo",
           message: "CancelInvite",
           recipient_id: recipientId,
-          username: currentUserName,
+          username: allUsers[currentUserID],
         })
       );
     }
@@ -659,9 +658,9 @@ function initializeChatPage() {
       chatSocket.send(
         JSON.stringify({
           type: "sendSystemMessage",
-          message: `You are invited to play a game with ${currentUserName}! Accept the invite at ${currentUserName} chat.`,
+          message: `You are invited to play a game with ${allUsers[currentUserID]}! Accept the invite at ${allUsers[currentUserID]} chat.`,
           recipient_id: recipientId,
-          username: currentUserName,
+          username: allUsers[currentUserID],
         })
       );
       // send invite info via web socket
@@ -670,7 +669,7 @@ function initializeChatPage() {
           type: "sendInviteInfo",
           message: "InviteForGame",
           recipient_id: recipientId,
-          username: currentUserName,
+          username: allUsers[currentUserID],
         })
       );
     }

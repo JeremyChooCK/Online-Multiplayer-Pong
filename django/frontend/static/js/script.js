@@ -100,7 +100,6 @@ async function updateUIOnLogin() {
         document.getElementById("profile_pic").src = userData.profile.profile_picture;
         document.getElementById("usernameDisplay").textContent = userData.username;
     }
-    localStorage.removeItem('username');
     document.getElementById('2faModal').style.display = 'none';
     initializeChatPage();
 }
