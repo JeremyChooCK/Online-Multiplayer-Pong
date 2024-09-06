@@ -1,5 +1,5 @@
 from django.urls import path
-from authentication.views import MyTokenObtainPairView, UserCreate, oauth_callback, UserDetailView, UpdateUsernameView, ChangeProfilePictureView, UserIdPairsView
+from authentication.views import MyTokenObtainPairView, UserCreate, oauth_callback, UserDetailView, UpdateUsernameView, ChangeProfilePictureView, UserIdPairsView, UserCreate, verify_code_view
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
@@ -15,4 +15,6 @@ urlpatterns = [
     path('edit/name', UpdateUsernameView.as_view(), name='edit_name'),
     path('edit/picture', ChangeProfilePictureView.as_view(), name='change_profile_picture'),
     path('user_id_pairs/', UserIdPairsView.as_view(), name='user_id_pairs'),
+    # path('send_code/', send_verification_code_view, name='send_verification_code'),  # Add endpoint to send verification code
+    path('verify_code/', verify_code_view.as_view(), name='verify_code_view'),
 ]

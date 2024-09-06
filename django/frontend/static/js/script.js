@@ -59,6 +59,35 @@ async function fetchUserData(user_id) {
     }
 }
 
+async function verifyCode() {
+    const code = document.getElementById('2faverify').value;
+    const url = `${ip}auth/verify_code/`;
+
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("accessToken")}`
+            },
+            body: JSON.stringify({ code })
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to verify code');
+        }
+
+        const data = await response.json();
+        console.log('Verification successful:', data);
+        alert('Verification successful!');
+    } catch (error) {
+        console.error('Error during verification:', error);
+        alert('Verification failed: ' + error.message);
+        localStorage.removeItem("accessToken");
+    }
+}
+
+
 async function updateUIOnLogin() {
     token = localStorage.getItem("accessToken");
     user_id = jwt_decode(token).user_id;
@@ -71,6 +100,7 @@ async function updateUIOnLogin() {
         document.getElementById("profile_pic").src = userData.profile.profile_picture;
         document.getElementById("usernameDisplay").textContent = userData.username;
     }
+    localStorage.clear('username');
     initializeChatPage();
 }
 
@@ -99,6 +129,7 @@ async function postLogin() {
     const username = document.getElementById("usernameInput").value;
     const password = document.getElementById("passwordInput").value;
     const url = ip + "auth/token/";
+    localStorage.setItem("username", username);
 
     try {
         const response = await fetch(url, {
@@ -114,8 +145,16 @@ async function postLogin() {
         }
 
         const data = await response.json();
-        localStorage.setItem("accessToken", data.access);
-        localStorage.setItem("refreshToken", data.refresh);
+        console.log("AAAAAAAAAAAAAAAAAAAAAAAAAA", data);
+        if (data.access)
+            localStorage.setItem("accessToken", data.access);
+        if (data.refresh)
+            localStorage.setItem("refreshToken", data.refresh);
+        if (data.require_2fa){
+            document.getElementById("2faModal").style.display = '';
+            return;
+        }
+
         // Update UI after login
         updateUIOnLogin();
         // window.location.reload();
@@ -125,6 +164,43 @@ async function postLogin() {
         if (error.message === "Unauthorized") {
             alert("Invalid credentials");
         }
+    }
+}
+async function postTwofa() {
+    const code = document.getElementById("2faverify").value;
+    if (!code) {
+        alert("Please enter the verification code.");
+        return;
+    }
+    const url = `${ip}auth/verify_code/`;
+    const username = localStorage.getItem('username');
+    console.log("CODE: ", code);  // Debug to ensure code is captured correctly
+    try {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${localStorage.getItem("accessToken")}`  // Make sure the token is sent if required
+            },
+            body: JSON.stringify({ code, username}),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();  // Parse error message from server if possible
+            throw new Error(errorData.error || 'Unauthorized');  // Use server-provided error message
+        }
+
+        const data = await response.json();
+        localStorage.setItem("accessToken", data.access);
+        localStorage.setItem("refreshToken", data.refresh);
+
+        // Update UI after login
+        updateUIOnLogin();
+        window.location.reload();
+    }
+    catch (error) {
+        console.error('Fetch error:', error);
+        alert("Verification failed: " + error.message);  // Show more descriptive error to the user
     }
 }
 
