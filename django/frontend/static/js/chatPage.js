@@ -72,7 +72,7 @@ if (userID !== "0" && !friendList.includes(userID)) {
 
 
 // Function to set the onclick for any user in the chat list
-function handleChatTargetClick (chatTarget, userID, username) {
+function handleChatTargetClick (chatTarget, userID) {
   const chatHeader = document.getElementById('chat-header');
   const chatProfileButton = document.getElementById('chat-profile-button');
   const chatInput = document.getElementById('chat-input-container');
@@ -89,7 +89,7 @@ function handleChatTargetClick (chatTarget, userID, username) {
     }
     // Select the new user
     chatTarget.classList.add('selected');
-    chatProfileButton.textContent = username;
+    chatProfileButton.textContent = allUsers[userID];
 
     // Show or hide chat-header (bar above chat messages)
     if (chatProfileButton.textContent.trim() === '') {
@@ -223,7 +223,7 @@ function initializeChatPage() {
         const chatTarget = document.createElement('div');
         addUserToChatList(userID, username, chatTarget);
         // ON CLIICK FOR EACH USER
-        handleChatTargetClick(chatTarget, userID, username);
+        handleChatTargetClick(chatTarget, userID);
         usernamesDiv.appendChild(chatTarget);
       }    
     }
@@ -330,7 +330,7 @@ function initializeChatPage() {
 
   // ---------------------------- CHAT PROFILE AND MATCH HISTORY ----------------------------
 
-  const pongGameDiv = document.getElementById('pongGame');
+  const pongGameDiv = document.getElementById('game-container');
   const profileDiv = document.getElementById('profile_settings');
   const profileName = document.getElementById('profile_name');
   const profileEditName = document.getElementById('edit_name');
@@ -341,7 +341,7 @@ function initializeChatPage() {
       profileEditName.style.display = 'none';
     }
     else {
-      pongGameDiv.style.display = 'block'
+      pongGameDiv.style.display = 'flex'
       profileDiv.style.display = 'none';
       profileEditName.style.display = '';
     }
@@ -466,16 +466,6 @@ function initializeChatPage() {
 
     // Receive request for status
     if (data.purpose === 'requestStatus' && data.senderID && data.message && data.senderName && !blockArray.includes(data.senderID)) {
-     
-      // update username if other user change username in their profile
-      if (data.senderName !== allUsers[data.senderID]) {
-        allUsers[data.senderID] = data.senderName;
-        currentUserName = data.senderName;
-        console.log("enter", allUsers[data.senderID], data.senderName)
-        const chatTargetElement = document.getElementById(`chat-target-${data.senderID}`);
-        chatTargetElement.querySelector('p').textContent = data.senderName;
-        
-      }
 
       // New user come online
       if (!allUsers.hasOwnProperty(data.senderID)) {
@@ -498,7 +488,17 @@ function initializeChatPage() {
           statusIcon.textContent = '🟢';
           showToast(`${data.senderName} is online`, 3000);
         }
-      }      
+      } 
+
+           
+      // update username if other user change username in their profile
+      if (data.senderName !== allUsers[data.senderID]) {
+        allUsers[data.senderID] = data.senderName;
+        currentUserName = data.senderName;
+        console.log("enter", allUsers[data.senderID], data.senderName)
+        const chatTargetElement = document.getElementById(`chat-target-${data.senderID}`);
+        chatTargetElement.querySelector('p').textContent = data.senderName;
+      }
 
       // update allUsersStatus in to catch the 2 second deta between ping and statusupdate
       allUsersStatus[data.senderID] = true;

@@ -13,6 +13,7 @@ html, body {
     height: 400px;
     border: 2px solid #000000;
     margin: 10px;
+    align-items: center;
 }
 
 .paddle {
@@ -59,9 +60,10 @@ html, body {
     margin-top: 20px;
 }
 
-#container {
+#game-container {
     display: flex;
     flex-direction: column;
+    align-items: center;
 }
 
 #messageBox {
@@ -91,6 +93,5 @@ html, body {
 #controls {
     color: rgb(100, 100, 100);
     font-size: 16px;
-    text-align: right;
-    margin-right: 20px;
+    text-align: center;
 }

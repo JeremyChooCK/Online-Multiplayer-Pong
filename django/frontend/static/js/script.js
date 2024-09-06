@@ -360,7 +360,7 @@ function redirectToOAuthProvider() {
 async function loadProfile(user_id) {
     token = localStorage.getItem("accessToken");
     document.getElementById("profile_settings").style.display = '';
-    document.getElementById("pongGame").style.display = 'none';
+    document.getElementById("game-container").style.display = 'none';
     const userData = await fetchUserData(user_id);
     let wins = 0;
     let losses = 0;
@@ -544,7 +544,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('profile_pic').addEventListener('click', function() {
-        const pongGameDiv = document.getElementById('pongGame');
+        const pongGameDiv = document.getElementById('game-container');
         const token = localStorage.getItem("accessToken");
         const userid = jwt_decode(token).user_id;
         const currUserName = allUsers[userid];
@@ -554,10 +554,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if ((profileDiv.style.display === 'none' || profileName !== currUserName) && profileName !== "pong-bot") {
             loadProfile(userid);
-            profileEditName.style.display = 'block';
+            profileEditName.style.display = '';
         }
         else {
-            pongGameDiv.style.display = 'block'
+            pongGameDiv.style.display = 'flex'
             profileDiv.style.display = 'none';
             profileEditName.style.display = '';
         }
