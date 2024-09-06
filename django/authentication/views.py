@@ -135,18 +135,19 @@ def handle_user_profile_creation(user, user_info):
             profile_picture=file_path,
             wins=0,
             losses=0,
-            match_history=''
+            match_history=[]
         )
 
 
 def exchange_code_for_token(code):
     token_url = 'https://api.intra.42.fr/oauth/token'
+    env = environ.Env()
     data = {
         'grant_type': 'authorization_code',
         'code': code,
         'redirect_uri': 'https://localhost/auth/oauth',
-        'client_id': environ.get('CLIENT_ID'),
-        'client_secret': environ.get('CLIENT_SECRET'),
+        'client_id': env('client_id'),
+        'client_secret': env('client_secret'),
     }
     response = requests.post(token_url, data=data)
     # Check if the request was successful
