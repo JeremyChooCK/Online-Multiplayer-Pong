@@ -519,6 +519,7 @@ class PongGameConsumer(AsyncWebsocketConsumer):
         # Process different game modes
         if RoomManager.active_connections.get(self.user_id):
             print(f'User {self.user_id} is already in a game')
+            print(RoomManager.active_connections)
             await self.send(json.dumps({'type': 'notify', 'message': 'You are already in a game'}))
             await self.close()
             return
@@ -556,6 +557,8 @@ class PongGameConsumer(AsyncWebsocketConsumer):
     async def disconnect(self, close_code):
         if hasattr(self, 'game_room'):
             await self.game_room.remove_player(self)
+            if self.user_id in RoomManager.active_connections:
+                room_manager.active_connections.pop(self.user_id, None)
             if not self.game_room.players:
                 room_manager.rooms.pop(self.game_room.room_id, None)
 
