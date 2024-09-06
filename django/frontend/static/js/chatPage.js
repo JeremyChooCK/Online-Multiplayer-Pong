@@ -627,8 +627,8 @@ function initializeChatPage() {
       }
       let url = `wss://localhost/ws/game/?token=${encodeURIComponent(token)}&mode=one_on_one&userid=${currentUserID}&opponentid=${recipientId}`;
       startGame(url);
-      ongoingGame = true;
       inviteButton.style.display = 'none';
+      ongoingGame = true;
     }
     // Second: user cancel invite from other users
     else if (sendInviteArray.includes(recipientId)) {

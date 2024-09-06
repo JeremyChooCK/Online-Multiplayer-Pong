@@ -113,6 +113,12 @@ function startGame(url) {
             console.log("Notify:", data.message);
             messageBox.innerText = data.message;
             notifyPongBot(data.message);
+            if (data.message === "Game is starting")
+            {
+                ongoingGame = true;
+                const inviteButton = document.getElementById('invite-button');
+                inviteButton.style.display = 'none';
+            }
         } else if (data.type === 'game_over') {
             messageBox.innerText = data.message;
             notifyPongBot(data.message);

@@ -251,7 +251,7 @@ class RoomManager:
         if player in self.waiting_players_one_on_one.values():
             key = next(key for key, value in self.waiting_players_one_on_one.items() if value == player)
             self.waiting_players_one_on_one.pop(key)
-            await player.send(json.dumps({'type': 'notify', 'message': 'Timeout'}))
+            await player.send(json.dumps({'type': 'game_over', 'message': 'Timeout'}))
             RoomManager.active_connections.pop(player.user_id, None)
             await player.close()
 
@@ -344,7 +344,7 @@ class RoomManager:
         await asyncio.sleep(self.TIMEOUT_SECONDS)
         if not self.tournament_active:  # Check if the tournament has started
             for player in self.waiting_players_tournament:
-                await player.send(json.dumps({'type': 'notify', 'message': 'Tournament did not start in time, disconnecting.'}))
+                await player.send(json.dumps({'type': 'game_over', 'message': 'Tournament did not start in time, disconnecting.'}))
                 RoomManager.active_connections.pop(player.user_id, None)
                 await player.close()
             self.waiting_players_tournament.clear()
