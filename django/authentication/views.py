@@ -259,6 +259,7 @@ class verify_code_view(APIView):
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
+        print(f'refresh: {refresh} access: {refresh.access_token}')
         return Response({
             'refresh': str(refresh),
             'access': str(refresh.access_token),

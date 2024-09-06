@@ -100,7 +100,8 @@ async function updateUIOnLogin() {
         document.getElementById("profile_pic").src = userData.profile.profile_picture;
         document.getElementById("usernameDisplay").textContent = userData.username;
     }
-    localStorage.clear('username');
+    localStorage.removeItem('username');
+    document.getElementById('2faModal').style.display = 'none';
     initializeChatPage();
 }
 
@@ -191,12 +192,15 @@ async function postTwofa() {
         }
 
         const data = await response.json();
+        console.log('Verification successful:', data);
         localStorage.setItem("accessToken", data.access);
+        console.log("Access Token: ", data.access);
         localStorage.setItem("refreshToken", data.refresh);
+        console.log("Refresh Token: ", data.refresh);
+        console.log("localStorage: ", localStorage.getItem("accessToken"), localStorage.getItem("refreshToken"));
 
         // Update UI after login
         updateUIOnLogin();
-        window.location.reload();
     }
     catch (error) {
         console.error('Fetch error:', error);
