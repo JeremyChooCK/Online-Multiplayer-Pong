@@ -8,8 +8,9 @@ function showToast(message, duration = 3000) {
   // Style the toast message
   toast.style.position = 'fixed';
   toast.style.top = '65px';
-  toast.style.left = '20px';
-  toast.style.padding = '10px';
+  toast.style.left = '50%';
+  toast.style.transform = 'translate(-50%, 0)';
+  toast.style.padding = '15px';
   toast.style.color = 'white';
   toast.style.backgroundColor = 'green';
   toast.style.transition = 'opacity 0.5s';
@@ -62,8 +63,17 @@ if (userID !== "0" && !friendList.includes(userID)) {
   const unreadCounter = document.createElement('span');
   unreadCounter.id = `unread-counter-${userID}`; // Add an id to the counter
   unreadCounter.textContent = '0'; // Initialize the counter with 0 unread messages
-  unreadCounter.style.marginLeft = '10px'; // Add some space between the username and the counter  
+  unreadCounter.style.marginLeft = '10px'; // Add some space between the username and the counter
+  unreadCounter.style.paddingLeft = '5px';
+  unreadCounter.style.paddingRight = '5px';
   unreadCounter.style.display = 'none';
+  unreadCounter.style.color = 'black'; // Change the color of the counter to black
+  unreadCounter.style.backgroundColor = 'lightgray'; // Change the background color to yellow
+  unreadCounter.style.borderRadius = '20%'; // Make the counter circular
+  unreadCounter.style.textAlign = 'center'; // Center the text
+  unreadCounter.style.justifyContent = 'center';
+  // unreadCounter.style.height = '20px'; // Set a fixed height
+  // unreadCounter.style.lineHeight = '20px'; // Vertically center the text
 
   chatTarget.appendChild(statusIcon);
   chatTarget.appendChild(usernameText);
@@ -459,8 +469,7 @@ function initializeChatPage() {
       if (chatTarget && !chatTarget.classList.contains('selected')) {
         const unreadCounter = document.getElementById(`unread-counter-${data.senderID}`);
         unreadCounter.textContent = Number(unreadCounter.textContent) + 1;
-        unreadCounter.style.display = 'inline';
-        console.log('unread message');
+        unreadCounter.style.display = 'flex';
       }
     }
 
