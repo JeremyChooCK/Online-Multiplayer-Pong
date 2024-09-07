@@ -395,7 +395,7 @@ async function loadProfile(user_id) {
     let losses = 0;
     if(userData){
         const matchHistoryBody = document.getElementById("match_history_body");
-        matchHistoryBody.innerHTML = ''; // Clear existing rows
+        matchHistoryBody.textContent = ''; // Clear existing rows
 
         userData.profile.match_history.forEach((match) => {
             if (!match.date || !match.result) return;

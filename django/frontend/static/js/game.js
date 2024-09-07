@@ -68,11 +68,11 @@ function notifyPongBot (message) {
         
     var div = document.createElement("div");
     div.className = "chat-message";
-    div.innerHTML = `${message}`;
+    div.textContent = `${message}`;
 
     var timestamp = document.createElement("div");
     timestamp.className = "timestamp";
-    timestamp.innerHTML = getTimeStamp(new Date());
+    timestamp.textContent = getTimeStamp(new Date());
     div.appendChild(timestamp);
 
     chatSections["0"].appendChild(div);

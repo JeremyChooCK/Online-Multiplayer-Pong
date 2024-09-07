@@ -407,11 +407,11 @@ function initializeChatPage() {
 
     var div = document.createElement("div");
     div.className = "chat-message sent";
-    div.innerHTML = messageInput;
+    div.textContent = messageInput;
 
     var timestamp = document.createElement("div");
     timestamp.className = "timestamp sent";
-    timestamp.innerHTML = getTimeStamp(new Date());
+    timestamp.textContent = getTimeStamp(new Date());
     div.appendChild(timestamp);
 
     chatSections[recipientId].appendChild(div);
@@ -455,11 +455,11 @@ function initializeChatPage() {
       
       var div = document.createElement("div");
       div.className = "chat-message";
-      div.innerHTML = `${data.message}`;
+      div.textContent = `${data.message}`;
 
       var timestamp = document.createElement("div");
       timestamp.className = "timestamp";
-      timestamp.innerHTML = getTimeStamp(new Date());
+      timestamp.textContent = getTimeStamp(new Date());
       div.appendChild(timestamp);
 
       chatSections[data.senderID].appendChild(div);
