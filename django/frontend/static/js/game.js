@@ -83,7 +83,7 @@ function notifyPongBot (message) {
         const unreadCounter = document.getElementById(`unread-counter-${"0"}`);
         unreadCounter.textContent = Number(unreadCounter.textContent) + 1;
         unreadCounter.style.display = 'inline';
-        console.log('unread message');
+        // console.log('unread message');
     }
     
 }
@@ -93,16 +93,16 @@ function startGame(url) {
     const token = localStorage.getItem('accessToken');
     const user_id = jwt_decode(token).user_id;
 
-    console.log("WebSocket URL:", url);
+    // console.log("WebSocket URL:", url);
     gameSocket = new WebSocket(url);
 
     gameSocket.onopen = function() {
-        console.log("WebSocket connection established.");
+        // console.log("WebSocket connection established.");
     };
 
     gameSocket.onmessage = function(event) {
         const data = JSON.parse(event.data);
-        console.log("Received data:", data.type, data);
+        // console.log("Received data:", data.type, data);
         // Handle different message types here...
         if (data.type === 'setup') {
             playerNumber = data.player_number;
@@ -110,7 +110,7 @@ function startGame(url) {
             messageBox.innerText = data.message;
             notifyPongBot(data.message);
         } else if (data.type === 'notify') {
-            console.log("Notify:", data.message);
+            // console.log("Notify:", data.message);
             messageBox.innerText = data.message;
             notifyPongBot(data.message);
             if (data.message === "Game is starting")
@@ -126,11 +126,11 @@ function startGame(url) {
             const inviteButton = document.getElementById('invite-button');
             inviteButton.style.display = 'block';
             inviteButton.textContent = 'Invite Player to Game';
-            console.log("Game Over:", data.message);
+            // console.log("Game Over:", data.message);
         } if (data.ball_position) {
             ball.style.left = `${data.ball_position.x}%`;
             ball.style.top = `${data.ball_position.y}%`;
-            // console.log("room_groupname", data.room_group_name);
+            // // console.log("room_groupname", data.room_group_name);
         } if (data.paddle_positions) {
             paddle1.style.top = `${data.paddle_positions.player1}%`;
             paddle2.style.top = `${data.paddle_positions.player2}%`;
@@ -146,7 +146,7 @@ function startGame(url) {
     };
 
     // gameSocket.onclose = function() {
-    //     console.log('WebSocket closed unexpectedly.');
+    //     // console.log('WebSocket closed unexpectedly.');
     // };
 }
 
@@ -157,37 +157,37 @@ function getPaddlePosition(key) {
     paddleNumber % 2 == 1 ? paddleNumber = '1' : paddleNumber = '2';
     const paddleId = 'paddle' + paddleNumber;
     const paddle = document.getElementById(paddleId);
-    // console.log("paddle:", paddleId);
+    // // console.log("paddle:", paddleId);
 
     // Log the heights in pixels for debugging
     const paddleHeightPx = parseFloat(window.getComputedStyle(paddle).height);
     const pongGameHeightPx = parseFloat(window.getComputedStyle(pongGame).height);
-    // console.log("Paddle Height in px:", paddleHeightPx, "Game Height in px:", pongGameHeightPx);
+    // // console.log("Paddle Height in px:", paddleHeightPx, "Game Height in px:", pongGameHeightPx);
 
     // Calculate the paddle's height as a percentage of its container
     const paddleHeightPercent = (paddleHeightPx / pongGameHeightPx) * 100;
-    // console.log("Paddle Height Percentage:", paddleHeightPercent);
+    // // console.log("Paddle Height Percentage:", paddleHeightPercent);
 
     // Current top position as a percentage
     const currentPercent = parseFloat(paddle.style.top.replace('%', '')) || 50;
-    // console.log("Current Percent Position:", currentPercent);
+    // // console.log("Current Percent Position:", currentPercent);
 
     // Determine the percentage step for each key press
     const stepPercent = (60 / pongGameHeightPx) * 100;  // Using a fixed step of 60 pixels converted to percentage
-    // console.log("Step Percent for Movement:", stepPercent);
+    // // console.log("Step Percent for Movement:", stepPercent);
 
     let newPercent = currentPercent;
     if (key === 'ArrowUp') {
         newPercent = Math.max(currentPercent - stepPercent, 0);  // Ensure the paddle doesn't go above the top edge
-        // console.log("Adjusted Percent after ArrowUp:", newPercent);
+        // // console.log("Adjusted Percent after ArrowUp:", newPercent);
     } else if (key === 'ArrowDown') {
         newPercent = Math.min(currentPercent + stepPercent, 100 - paddleHeightPercent);  // Adjust for paddle height
-        // console.log("Adjusted Percent after ArrowDown:", newPercent);
+        // // console.log("Adjusted Percent after ArrowDown:", newPercent);
     }
 
     // Update the DOM using percentages
     paddle.style.top = `${newPercent}%`;  
-    // console.log("Updated Paddle Position:", newPercent);
+    // // console.log("Updated Paddle Position:", newPercent);
 
     return newPercent;  // Send this to the server
 }
@@ -227,9 +227,10 @@ document.addEventListener('keyup', function(event) {
 });
 
 function sendPaddleMove(direction) {
-    if (typeof gameSocket !== 'object') {
+    if (typeof gameSocket !== 'object' || gameSocket.readyState === WebSocket.CLOSED) {
         return;
     }
+    
     gameSocket.send(JSON.stringify({
         action: 'move_paddle',
         direction: direction,

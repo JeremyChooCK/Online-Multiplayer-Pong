@@ -203,7 +203,7 @@ let friendList = [];
 const chatSections = {};  // Store chat sections for each user
 
 function initializeChatPage() {
-  console.log('chat page loaded');
+  // console.log('chat page loaded');
   const token = localStorage.getItem("accessToken");
   const usernamesDiv = document.getElementById('usernames');
   const chatProfileButton = document.getElementById('chat-profile-button');
@@ -224,7 +224,7 @@ function initializeChatPage() {
   })
   .then(response => response.json())
   .then(users => {
-    console.log("getUserIDPairs:", users);
+    // console.log("getUserIDPairs:", users);
     allUsers = users;
     allUsers['0'] = 'pong-bot';
     for (let userID in allUsers) {
@@ -378,7 +378,7 @@ function initializeChatPage() {
         username: localStorage.getItem('username'),
       })
     );
-    console.log("The connection was setup successfully!");
+    // console.log("The connection was setup successfully!");
   };
 
   // close socket
@@ -395,13 +395,13 @@ function initializeChatPage() {
   };
   document.querySelector("#id_message_send_button").onclick = function (e) {
     var messageInput = document.querySelector("#id_message_send_input").value;
-    console.log(messageInput, recipientId);    
+    // console.log(messageInput, recipientId);    
     if (!messageInput) {
-      console.log("Cannot send an empty message or no recipient selected");
+      // console.log("Cannot send an empty message or no recipient selected");
       return;
     }
     if (!recipientId) {
-      console.log("No recipient selected");
+      // console.log("No recipient selected");
       return;
     }
 
@@ -435,7 +435,7 @@ function initializeChatPage() {
 
   chatSocket.onmessage = function (e) {
     const data = JSON.parse(e.data);
-    console.log("onmessage:", data.purpose, data.senderID, data.senderName, data.message);
+    // console.log("onmessage:", data.purpose, data.senderID, data.senderName, data.message);
     // do not process own messages
     if (data.senderID === currentUserID) {
       return
@@ -521,7 +521,7 @@ function initializeChatPage() {
 
     // Receive online status
     if (data.purpose === 'updateStatus' && data.senderID && data.message && !blockArray.includes(data.senderID)) {
-      console.log(data.senderID, "is online")
+      // console.log(data.senderID, "is online")
 
       // change status to green
       const statusIcon = document.getElementById(`status-icon-${data.senderID}`);
@@ -571,7 +571,7 @@ function initializeChatPage() {
 
   // ping all users every 5 seconds. reset allUsersStatus Array
   setInterval(() => {
-    console.log("pinging all users")
+    // console.log("pinging all users")
     chatSocket.send(
       JSON.stringify({
         type: "getStatusFromAllUsers",
@@ -606,7 +606,7 @@ function initializeChatPage() {
   document.querySelector("#invite-button").onclick = function (e) {
     // error
     if (!recipientId) {
-      console.log("No recipient selected");
+      // console.log("No recipient selected");
       return;
     }
     // not allow any invite if game is ongoing or any other condition we want to set.

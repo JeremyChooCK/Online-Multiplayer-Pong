@@ -4,7 +4,7 @@ let ip = "https://localhost/";
 
 async function checkAuthOnLoad() {
     const accessToken = localStorage.getItem("accessToken");
-    console.log("Access Token exists");
+    // console.log("Access Token exists");
     if (accessToken) {
         try {
             const decoded = jwt_decode(accessToken);
@@ -44,7 +44,7 @@ async function fetchUserData(user_id) {
         }
 
         const data = await response.json();
-        console.log("User Data: ", data);
+        // console.log("User Data: ", data);
         localStorage.setItem('username', data.username);
         return data;
     } catch (error) {
@@ -78,7 +78,7 @@ async function verifyCode() {
         }
 
         const data = await response.json();
-        console.log('Verification successful:', data);
+        // console.log('Verification successful:', data);
         alert('Verification successful!');
     } catch (error) {
         console.error('Error during verification:', error);
@@ -105,7 +105,7 @@ async function updateUIOnLogin() {
 }
 
 async function handleLoggedOutState() {
-    console.log("Logged out")
+    // console.log("Logged out")
     const accessToken = localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("refreshToken");
 
@@ -145,7 +145,7 @@ async function postLogin() {
         }
 
         const data = await response.json();
-        console.log("AAAAAAAAAAAAAAAAAAAAAAAAAA", data);
+        // console.log("AAAAAAAAAAAAAAAAAAAAAAAAAA", data);
         if (data.access)
             localStorage.setItem("accessToken", data.access);
         if (data.refresh)
@@ -174,7 +174,7 @@ async function postTwofa() {
     }
     const url = `${ip}auth/verify_code/`;
     const username = localStorage.getItem('username');
-    console.log("CODE: ", code);  // Debug to ensure code is captured correctly
+    // console.log("CODE: ", code);  // Debug to ensure code is captured correctly
     try {
         const response = await fetch(url, {
             method: "POST",
@@ -191,12 +191,12 @@ async function postTwofa() {
         }
 
         const data = await response.json();
-        console.log('Verification successful:', data);
+        // console.log('Verification successful:', data);
         localStorage.setItem("accessToken", data.access);
-        console.log("Access Token: ", data.access);
+        // console.log("Access Token: ", data.access);
         localStorage.setItem("refreshToken", data.refresh);
-        console.log("Refresh Token: ", data.refresh);
-        console.log("localStorage: ", localStorage.getItem("accessToken"), localStorage.getItem("refreshToken"));
+        // console.log("Refresh Token: ", data.refresh);
+        // console.log("localStorage: ", localStorage.getItem("accessToken"), localStorage.getItem("refreshToken"));
 
         // Update UI after login
         updateUIOnLogin();
@@ -249,7 +249,7 @@ async function postRegister() {
         return;
     }
     const twofa = document.getElementById("2faInput").checked;
-    console.log("twofa: ", twofa);
+    // console.log("twofa: ", twofa);
     const url = ip + "auth/register/";
     
     if(username === ""){
@@ -288,12 +288,12 @@ async function postRegister() {
         });
 
         if (!response.ok) {
-            console.log(response);
+            // console.log(response);
             throw new Error('Username already exists'); // Adjusted for consistency with your error handling
         }
 
         const data = await response.json();
-        console.log('successfully registered');
+        // console.log('successfully registered');
         alert("Successfully registered");
         // loginAfterRegister(username, password);
         return data;
@@ -368,7 +368,7 @@ async function refreshAccessToken() {
         if (response.ok) {
             const data = await response.json();
             localStorage.setItem("accessToken", data.access);  // Update the access token
-            console.log("Access token refreshed.");
+            // console.log("Access token refreshed.");
             return data.access;
         } else {
             throw new Error('Failed to refresh access token');
@@ -383,7 +383,7 @@ async function refreshAccessToken() {
 function redirectToOAuthProvider() {
     // get authUrl from env file
     const authUrl = "https://api.intra.42.fr/oauth/authorize?client_id=u-s4t2ud-9b0fa67cf4ac001dac948db1c08b417156de148160cb998b92520a9e9bbaef2b&redirect_uri=https%3A%2F%2Flocalhost%2Fauth%2Foauth&response_type=code"; // This will redirect the user to the OAuth provider
-    console.log('Auth URL:', authUrl);
+    // console.log('Auth URL:', authUrl);
     window.location.href = authUrl; // This will redirect the user to the OAuth provider
 }
 
@@ -523,7 +523,7 @@ function saveProfileChanges(){
         return;
     }
     if (newUsername != localStorage.getItem("username")){
-        console.log("Updating name");
+        // console.log("Updating name");
         let token = localStorage.getItem("accessToken");
         updateUserName(newUsername, token);
         cancelNameChange();
@@ -531,7 +531,7 @@ function saveProfileChanges(){
 }
 
 async function updateUserName(newUsername, token) {  // Added token parameter
-    console.log("ACCESS TOKEN: ", token);
+    // console.log("ACCESS TOKEN: ", token);
     try {
         const response = await fetch(ip + "auth/edit/name", {
             method: "POST",
@@ -542,11 +542,11 @@ async function updateUserName(newUsername, token) {  // Added token parameter
             body: JSON.stringify({ new_username: newUsername }), // Ensure this matches the expected key in Django
         });
         if (!response.ok) {
-            console.log("Response:", response);
+            // console.log("Response:", response);
             alert("Username already exists");
         }
         const data = await response.json();
-        console.log('successfully updated name');
+        // console.log('successfully updated name');
         document.getElementById("usernameDisplay").textContent = newUsername;
         document.getElementById("profile_name").textContent = newUsername;
         document.getElementById("profile_settings_name").textContent = newUsername;
@@ -626,7 +626,7 @@ async function uploadFile(file) {
         }
         
         const user_id = jwt_decode(token).user_id;
-        console.log("TOKEN: ", token);
+        // console.log("TOKEN: ", token);
 
         const csrfToken = getCookie('csrftoken'); // Function to get CSRF token from cookies
         // if (!csrfToken) {
@@ -634,7 +634,7 @@ async function uploadFile(file) {
         //     return;
         // }
 
-        console.log("CSRF Token: ", csrfToken);
+        // console.log("CSRF Token: ", csrfToken);
 
         const response = await fetch(ip + "auth/edit/picture", {
             method: "POST",
@@ -647,12 +647,12 @@ async function uploadFile(file) {
         });
 
         if (!response.ok) {
-            console.log("Response:", response);
+            // console.log("Response:", response);
             throw new Error('Failed to upload image');
         }
 
         const data = await response.json();
-        console.log('Successfully uploaded picture');
+        // console.log('Successfully uploaded picture');
 
         // Fetch user data might need to be awaited if it is asynchronous
         const userData = await fetchUserData(user_id);
@@ -691,6 +691,6 @@ function getUserIdPairs(){
         },
     }).then(response => response.json())
     .then(data => {
-        console.log("getUserIDPairs:", data);
+        // console.log("getUserIDPairs:", data);
     });
 }
