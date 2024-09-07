@@ -294,6 +294,7 @@ async function postRegister() {
 
         const data = await response.json();
         console.log('successfully registered');
+        alert("Successfully registered");
         // loginAfterRegister(username, password);
         return data;
     } catch (error) {
@@ -424,7 +425,7 @@ async function loadProfile(user_id) {
                 } else {
                     losses += 1;
                 }
-                positions.textContent = "winner: " + match.result.winner + " loser: " + match.result.loser + " 3rd: ";
+                positions.textContent = "winner: " + match.winner + " loser: " + match.loser;
                 row.appendChild(date);
                 row.appendChild(time);
                 row.appendChild(mode);
@@ -542,7 +543,7 @@ async function updateUserName(newUsername, token) {  // Added token parameter
         });
         if (!response.ok) {
             console.log("Response:", response);
-            throw new Error('Unauthorized');
+            alert("Username already exists");
         }
         const data = await response.json();
         console.log('successfully updated name');
